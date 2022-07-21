@@ -5,7 +5,7 @@ import typing
 from ctypes import Structure, c_wchar, sizeof, wintypes
 from queue import Full, Queue
 
-import pythoncom
+import comtypes
 
 from .bot import WechatBot, wechatbot
 from .logger import logger
@@ -40,7 +40,7 @@ class ReceiveMsgHandler(socketserver.BaseRequestHandler):
         self.request.settimeout(self.timeout)
 
     def handle(self) -> None:
-        pythoncom.CoInitialize()
+        comtypes.CoInitialize()
         try:
             data = self.request.recv(1024)
             struct_size = sizeof(ReceiveMsgStruct)
@@ -54,7 +54,7 @@ class ReceiveMsgHandler(socketserver.BaseRequestHandler):
             return
         finally:
             self.request.sendall(b"200 OK")
-            pythoncom.CoUninitialize()
+            comtypes.CoUninitialize()
 
     def _handle(self, msg: ReceiveMsgStruct, bot: typing.Optional[WechatBot] = None):
         pass
@@ -66,6 +66,7 @@ class StoreReceiveMsgHandler(ReceiveMsgHandler):
         super(StoreReceiveMsgHandler, self).__init__(request, client_address, server)
 
     def _handle(self, msg: ReceiveMsgStruct, bot: typing.Optional[WechatBot] = None):
+        logger.debug(msg.to_dict())
         try:
             self.queue.put(msg, timeout=1)
         except Full:
@@ -93,6 +94,7 @@ class WechatReceiveMsgServer(socketserver.ThreadingTCPServer):
         return self.bot_cls()
 
     def serve_forever(self, poll_interval=0.5) -> None:
+        logger.info(f"开始运行微信消息接收服务，地址为：{self.server_address}")
         with self.bot:
             self.bot.start_receive_message(self.port)
             super().serve_forever(poll_interval)
@@ -119,19 +121,12 @@ class WechatStoreReceiveMsgServer(WechatReceiveMsgServer):
         self.RequestHandlerClass(request, client_address, self, self.queue)
 
     def serve_forever_in_thread(self, poll_interval=0.5, daemon=True):
-        t = threading.Thread(target=self.serve_forever, args=(poll_interval,))
+        def serve_in_thread():
+            comtypes.CoInitialize()
+            self.serve_forever(poll_interval)
+            comtypes.CoUninitialize()
+
+        t = threading.Thread(target=serve_in_thread)
         t.setDaemon(daemon)
         t.start()
         return t
-
-
-if __name__ == "__main__":
-    from .utils import get_free_port
-
-    port = get_free_port()
-    queue = Queue(maxsize=1000)
-    store_server = WechatStoreReceiveMsgServer(port, queue, StoreReceiveMsgHandler)
-    store_server.serve_forever_in_thread()
-    while True:
-        msg = queue.get()
-        print(msg)
