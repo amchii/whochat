@@ -107,3 +107,4 @@ logs/*
 .DS_Store
 
 # custom
+_test*.py

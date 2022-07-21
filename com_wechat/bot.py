@@ -1,9 +1,11 @@
 import json
 import typing
 
-import win32com.client
+import comtypes.client
+import psutil
 
 from .abc import CWechatRobot
+from .logger import logger
 
 
 class WechatBot:
@@ -20,7 +22,7 @@ class WechatBot:
     _enter_count = 0
 
     def __init__(self, com_object="WeChatRobot.CWeChatRobot"):
-        self._bot: CWechatRobot = win32com.client.Dispatch(com_object)
+        self._bot: CWechatRobot = comtypes.client.CreateObject(com_object)
 
     def __enter__(self):
         if self._enter_count <= 0:
@@ -32,7 +34,12 @@ class WechatBot:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._enter_count -= 1
         if self._enter_count <= 0:
-            self.stop_robot_service()
+            robot_pid = self.stop_robot_service()
+            logger.info(f"尝试结束CWeChatRobot进程: PID{robot_pid}")
+            try:
+                psutil.Process(robot_pid).kill()
+            except psutil.Error as e:
+                logger.warning(e, exc_info=True)
 
     def start_robot_service(self):
         return self._bot.CStartRobotService()
