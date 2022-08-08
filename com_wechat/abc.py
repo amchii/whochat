@@ -3,7 +3,7 @@ import typing
 DictIterable = typing.Iterable[typing.Tuple[str, typing.Any]]
 
 
-class CWechatRobot:
+class CWechatRobotABC:
     """Com Wechat实现的接口"""
 
     def CStartRobotService(self, wx_pid: int) -> int:
@@ -146,4 +146,14 @@ class CWechatRobot:
         ...
 
     def CAddChatRoomMember(self, wx_pid: int, chatroomid: str, wxids: list[str]):
+        ...
+
+
+class RobotEventSinkABC:
+    def OnGetMessageEvent(self, msg):
+        ...
+
+
+class RobotEventABC:
+    def CRegisterWxPidWithCookie(self, wx_pid: int, cookie: int):
         ...

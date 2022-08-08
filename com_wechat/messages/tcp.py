@@ -1,3 +1,4 @@
+"""不推荐：使用Com Event"""
 import json
 import socket
 import socketserver
@@ -9,12 +10,14 @@ from ctypes import Structure, c_wchar, sizeof, wintypes
 
 import comtypes
 
-from .bot import BaseWechatBot, WechatBot
-from .logger import logger
+from com_wechat.bot import WechatBot, WechatBotFactory
+from com_wechat.logger import logger
+from com_wechat.signals import Signal
 
 
 class ReceiveMsgStruct(Structure):
     _fields_ = [
+        ("pid", wintypes.DWORD),
         ("type", wintypes.DWORD),
         ("is_send_msg", wintypes.DWORD),
         ("sender", c_wchar * 80),
@@ -58,9 +61,7 @@ class ReceiveMsgHandler(socketserver.BaseRequestHandler):
         finally:
             comtypes.CoUninitialize()
 
-    def _handle(
-        self, msg: ReceiveMsgStruct, bot: typing.Optional[BaseWechatBot] = None
-    ):
+    def _handle(self, msg: ReceiveMsgStruct, bot: typing.Optional[WechatBot] = None):
         pass
 
 
@@ -69,7 +70,7 @@ class WechatReceiveMsgTCPServer(socketserver.ThreadingTCPServer):
     Com接口不支持指定IP
     """
 
-    bot_cls = WechatBot
+    bot_factory = WechatBotFactory
 
     def __init__(
         self,
@@ -80,11 +81,8 @@ class WechatReceiveMsgTCPServer(socketserver.ThreadingTCPServer):
     ):
         self.wx_pid = wx_pid
         self.port = port
+        self.bot = self.bot_factory.get(wx_pid)
         super().__init__(("127.0.0.1", port), RequestHandlerClass, **kwargs)
-
-    @property
-    def bot(self):
-        return self.bot_cls(wx_pid=self.wx_pid)
 
     def serve_forever(self, poll_interval=0.5) -> None:
         logger.info(f"开始运行微信消息接收服务，地址为：{self.server_address}")
@@ -109,8 +107,10 @@ class StoreReceiveMsgHandler(ReceiveMsgHandler):
                 data += self.request.recv(1024)
                 struct_size = sizeof(ReceiveMsgStruct)
                 while len(data) < struct_size:
-                    data += self.request.recv(1024)
-
+                    buf = self.request.recv(1024)
+                    if not buf:
+                        return
+                    data += buf
                 msg = self.msg_struct_cls.from_bytes(data)
                 self._handle(msg, self.server.bot)
                 data = b""
@@ -120,11 +120,9 @@ class StoreReceiveMsgHandler(ReceiveMsgHandler):
         finally:
             comtypes.CoUninitialize()
 
-    def _handle(
-        self, msg: ReceiveMsgStruct, bot: typing.Optional[BaseWechatBot] = None
-    ):
+    def _handle(self, msg: ReceiveMsgStruct, bot: typing.Optional[WechatBot] = None):
         msg_dict = msg.to_dict()
-        logger.debug(msg_dict)
+        logger.info(msg_dict)
         self.dqueue.append(msg_dict)
 
 
@@ -146,9 +144,11 @@ class WechatReceiveMsgRedirectTCPServer(WechatReceiveMsgTCPServer):
         # addr tuple -> socket client which need to redirect message
         self.redirects: set[socket.socket] = set()
         self.redirect_key = redirect_key
+        self.stop_redirect = False
         assert len(self.redirect_key) <= 16
         super().__init__(port, RequestHandlerClass, **kwargs)
         logger.info(f"转发Key为: {self.redirect_key}")
+        Signal.register_sigint(self.shutdown)
 
     def finish_request(self, request, client_address) -> None:
         flag = request.recv(len(self.redirect_key))
@@ -165,6 +165,11 @@ class WechatReceiveMsgRedirectTCPServer(WechatReceiveMsgTCPServer):
             return
         super().shutdown_request(request)
 
+    def shutdown(self) -> None:
+        super().shutdown()
+        self.stop_redirect = True
+        self.bot_factory.kill_robot()
+
     def serve_forever_in_thread(self, poll_interval=0.5, daemon=True):
         def serve_in_thread():
             comtypes.CoInitialize()
@@ -178,7 +183,7 @@ class WechatReceiveMsgRedirectTCPServer(WechatReceiveMsgTCPServer):
 
     def keep_redirect(self):
         logger.info("开启转发服务")
-        while True:
+        while not self.stop_redirect:
             if len(self.dqueue) != 0:
                 msg = self.dqueue.popleft()
                 data = json.dumps(msg).encode("utf-8") + b"\n"
@@ -193,6 +198,7 @@ class WechatReceiveMsgRedirectTCPServer(WechatReceiveMsgTCPServer):
                     self.shutdown_request(bad_request)
                     logger.info("已移除一个接受消息转发的客户端")
             time.sleep(0.1)
+        logger.info("转发服务已关闭")
 
     def serve(self):
         self.serve_forever_in_thread()
