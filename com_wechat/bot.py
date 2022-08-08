@@ -1,8 +1,9 @@
 import json
+import threading
 import typing
 from datetime import datetime
 
-from .utils import guess_wechat_user_by_path
+from .utils import guess_wechat_user_by_paths
 
 try:
     import comtypes.client as com_client
@@ -11,11 +12,26 @@ except ImportError:
 
 import psutil
 
-from .abc import CWechatRobot
+from .abc import CWechatRobotABC, RobotEventABC, RobotEventSinkABC
 from .logger import logger
 
+_robot_local = threading.local()
 
-class BaseWechatBot:
+
+# 保证每个线程的COM对象独立
+def get_robot_object(com_id) -> CWechatRobotABC:
+    if not hasattr(_robot_local, "robot_object"):
+        setattr(_robot_local, "robot_object", com_client.CreateObject(com_id))
+    return getattr(_robot_local, "robot_object")
+
+
+def get_robot_event(com_id) -> RobotEventABC:
+    if not hasattr(_robot_local, "robot_event"):
+        setattr(_robot_local, "robot_event", com_client.CreateObject(com_id))
+    return getattr(_robot_local, "robot_event")
+
+
+class WechatBot:
     """
     可以嵌套使用with语句:
     ```
@@ -26,52 +42,65 @@ class BaseWechatBot:
     ```
     """
 
-    _enter_count = 0
-
-    def __init__(self, wx_pid, bot: CWechatRobot):
+    def __init__(self, wx_pid, robot_object_id: str, robot_event_id: str = None):
         self.wx_pid = wx_pid
-        self._robot = bot
+        self._robot_object_id = robot_object_id
+        self._robot_event_id = robot_event_id
+        self.started = False
+        self.user_info = {}
+        self.event_connection = None
+
+    @property
+    def robot(self):
+        return get_robot_object(self._robot_object_id)
+
+    @property
+    def robot_event(self):
+        return get_robot_event(self._robot_event_id)
 
     def __enter__(self):
-        if self._enter_count <= 0:
-            self._enter_count = 0
-            self.start_robot_service()
-        self._enter_count += 1
+        self.start_robot_service()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._enter_count -= 1
-        if self._enter_count <= 0:
-            self.stop_robot_service()
+        self.stop_robot_service()
 
     def start_robot_service(self):
-        return self._robot.CStartRobotService(
+        if self.started:
+            return True
+        result = self.robot.CStartRobotService(
             self.wx_pid,
         )
+        if result == 0:
+            self.started = True
+        return not result
 
     def stop_robot_service(self):
-        return self._robot.CStopRobotService(
+        if not self.started:
+            return True
+        result = self.robot.CStopRobotService(
             self.wx_pid,
         )
+        if result == 0:
+            self.started = False
+        return not result
 
     def send_image(self, wx_id, img_path):
-        return self._robot.CSendImage(self.wx_pid, wx_id, img_path)
+        return self.robot.CSendImage(self.wx_pid, wx_id, img_path)
 
     def send_text(self, wx_id, text):
-        return self._robot.CSendText(self.wx_pid, wx_id, text)
+        return self.robot.CSendText(self.wx_pid, wx_id, text)
 
     def send_file(self, wx_id, filepath):
-        return self._robot.CSendFile(self.wx_pid, wx_id, filepath)
+        return self.robot.CSendFile(self.wx_pid, wx_id, filepath)
 
     def send_article(
         self, wxid: str, title: str, abstract: str, url: str, imgpath: str
     ):
-        return self._robot.CSendArticle(
-            self.wx_pid, wxid, title, abstract, url, imgpath
-        )
+        return self.robot.CSendArticle(self.wx_pid, wxid, title, abstract, url, imgpath)
 
     def send_card(self, wxid: str, shared_wxid: str, nickname: str):
-        return self._robot.CSendCard(self.wx_pid, wxid, shared_wxid, nickname)
+        return self.robot.CSendCard(self.wx_pid, wxid, shared_wxid, nickname)
 
     def send_at_text(
         self,
@@ -80,98 +109,114 @@ class BaseWechatBot:
         text: str,
         auto_nickname: bool = True,
     ):
-        return self._robot.CSendAtText(
+        return self.robot.CSendAtText(
             self.wx_pid, chatroom_id, at_wxids, text, auto_nickname
         )
 
     def get_friend_list(self):
         return (
-            self._robot.CGetFriendList(
+            self.robot.CGetFriendList(
                 self.wx_pid,
             )
             or []
         )
 
     def get_wx_user_info(self, wxid: str):
-        return self._robot.CGetWxUserInfo(self.wx_pid, wxid)
+        return self.robot.CGetWxUserInfo(self.wx_pid, wxid)
 
-    def get_self_info(self):
-        return json.loads(
-            self._robot.CGetSelfInfo(
-                self.wx_pid,
+    def get_self_info(self, refresh=False):
+        if refresh or not self.user_info:
+            self.user_info = json.loads(
+                self.robot.CGetSelfInfo(
+                    self.wx_pid,
+                )
             )
-        )
+        return self.user_info
 
     def check_friend_status(self, wxid: str):
-        return self._robot.CCheckFriendStatus(self.wx_pid, wxid)
+        return self.robot.CCheckFriendStatus(self.wx_pid, wxid)
 
     def get_com_work_path(self):
-        return self._robot.CGetComWorkPath(
+        return self.robot.CGetComWorkPath(
             self.wx_pid,
         )
 
     def start_receive_message(self, port: int):
-        return self._robot.CStartReceiveMessage(self.wx_pid, port)
+        return self.robot.CStartReceiveMessage(self.wx_pid, port)
 
     def stop_receive_message(self):
-        return self._robot.CStopReceiveMessage(
+        return self.robot.CStopReceiveMessage(
             self.wx_pid,
         )
 
     def get_chat_room_members(self, chatroom_id: str):
-        return self._robot.CGetChatRoomMembers(self.wx_pid, chatroom_id)
+        return self.robot.CGetChatRoomMembers(self.wx_pid, chatroom_id)
 
     def add_friend_by_wxid(self, wxid: str, message: str):
-        return self._robot.CAddFriendByWxid(self.wx_pid, wxid, message)
+        return self.robot.CAddFriendByWxid(self.wx_pid, wxid, message)
 
     def search_contact_by_net(self, keyword: str):
-        return self._robot.CSearchContactByNet(self.wx_pid, keyword)
+        return self.robot.CSearchContactByNet(self.wx_pid, keyword)
 
     def add_brand_contact(self, public_id: str):
-        return self._robot.CAddBrandContact(self.wx_pid, public_id)
+        return self.robot.CAddBrandContact(self.wx_pid, public_id)
 
     def change_we_chat_ver(self, version: str):
-        return self._robot.CChangeWeChatVer(self.wx_pid, version)
+        return self.robot.CChangeWeChatVer(self.wx_pid, version)
 
     def send_app_msg(self, wxid: str, app_id: str):
-        return self._robot.CSendAppMsg(self.wx_pid, wxid, app_id)
+        return self.robot.CSendAppMsg(self.wx_pid, wxid, app_id)
 
     def delete_user(self, wxid: str):
-        return self._robot.CDeleteUser(self.wx_pid, wxid)
+        return self.robot.CDeleteUser(self.wx_pid, wxid)
 
     def is_wx_login(self):
-        return self._robot.CIsWxLogin(
+        return self.robot.CIsWxLogin(
             self.wx_pid,
         )
 
+    def register_event(self, event_sink: RobotEventSinkABC):
+        if self.event_connection:
+            self.event_connection.__del__()
+        self.event_connection = com_client.GetEvents(self.robot_event, event_sink)
+        self.robot_event.CRegisterWxPidWithCookie(
+            self.wx_pid, self.event_connection.cookie
+        )
 
-class WechatBotMetaclass(type):
-    _robot: CWechatRobot
-    _robot_com_id: str
+
+class WechatBotFactoryMetaclass(type):
+    _robot: CWechatRobotABC
+    _robot_object_id: str
+    _robot_event_id: str
 
     @property
     def robot(cls):
-        if cls._robot is None:
-            cls._robot = com_client.CreateObject(cls._robot_com_id)
-        return cls._robot
+        return get_robot_object(cls._robot_object_id)
 
     @property
-    def bot_pid(cls) -> int:
+    def robot_event(cls):
+        return get_robot_event(cls._robot_event_id)
+
+    @property
+    def robot_pid(cls) -> int:
         return cls.robot.CStopRobotService(0)
 
 
-class WechatBot(BaseWechatBot, metaclass=WechatBotMetaclass):
+class WechatBotFactory(metaclass=WechatBotFactoryMetaclass):
     """
     单例
     """
 
     _instances = {}
-    _robot = None
-    _robot_com_id = "WeChatRobot.CWeChatRobot"
+    _robot_object_id = "WeChatRobot.CWeChatRobot"
+    _robot_event_id = "WeChatRobot.RobotEvent"
 
-    def __new__(cls, wx_pid=None, *args, **kwargs) -> "BaseWechatBot":
+    @classmethod
+    def get(cls, wx_pid) -> "WechatBot":
         if wx_pid not in cls._instances:
-            cls._instances[wx_pid] = BaseWechatBot(wx_pid=wx_pid, bot=cls.robot)
+            cls._instances[wx_pid] = WechatBot(
+                wx_pid, cls._robot_object_id, cls._robot_event_id
+            )
         return cls._instances[wx_pid]
 
     @classmethod
@@ -187,23 +232,29 @@ class WechatBot(BaseWechatBot, metaclass=WechatBotMetaclass):
         results = []
         for process in psutil.process_iter():
             if process.name().lower() == "wechat.exe":
+                files = [f.path for f in process.open_files()]
                 results.append(
                     {
                         "pid": process.pid,
                         "started": datetime.fromtimestamp(process.create_time()),
                         "status": process.status(),
-                        "wechat_user": guess_wechat_user_by_path(
-                            process.open_files()[-1].path
-                        ),
+                        "wechat_user": guess_wechat_user_by_paths(files),
                     }
                 )
         return results
 
     @classmethod
     def kill_robot(cls):
-        bot_pid = cls.bot_pid
-        logger.info(f"尝试结束CWeChatRobot进程: PID{bot_pid}")
+        bot_pid = cls.robot_pid
+        logger.info(f"尝试结束CWeChatRobot进程: pid {bot_pid}")
         try:
             psutil.Process(bot_pid).kill()
+            logger.info("OK")
         except psutil.Error as e:
             logger.warning(e, exc_info=True)
+
+    @classmethod
+    def register_events(cls, wx_pids, event_sink: RobotEventSinkABC):
+        connection = com_client.GetEvents(cls.robot_event, event_sink)
+        for wx_pid in wx_pids:
+            cls.robot_event.CRegisterWxPidWithCookie(wx_pid, connection.cookie)
