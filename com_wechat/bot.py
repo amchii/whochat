@@ -32,16 +32,6 @@ def get_robot_event(com_id) -> RobotEventABC:
 
 
 class WechatBot:
-    """
-    可以嵌套使用with语句:
-    ```
-        with bot:
-            with bot:
-                with bot:
-                    do_something()
-    ```
-    """
-
     def __init__(self, wx_pid, robot_object_id: str, robot_event_id: str = None):
         self.wx_pid = wx_pid
         self._robot_object_id = robot_object_id
@@ -142,6 +132,10 @@ class WechatBot:
         )
 
     def start_receive_message(self, port: int):
+        """
+        开始接收消息
+        :param port: 端口， port为0则使用COM Event推送
+        """
         return self.robot.CStartReceiveMessage(self.wx_pid, port)
 
     def stop_receive_message(self):
@@ -170,7 +164,7 @@ class WechatBot:
     def delete_user(self, wxid: str):
         return self.robot.CDeleteUser(self.wx_pid, wxid)
 
-    def is_wx_login(self):
+    def is_wx_login(self) -> int:
         return self.robot.CIsWxLogin(
             self.wx_pid,
         )
@@ -182,6 +176,9 @@ class WechatBot:
         self.robot_event.CRegisterWxPidWithCookie(
             self.wx_pid, self.event_connection.cookie
         )
+
+    def get_we_chat_ver(self) -> str:
+        return self.robot.CGetWeChatVer()
 
 
 class WechatBotFactoryMetaclass(type):
