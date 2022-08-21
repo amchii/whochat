@@ -3,11 +3,16 @@ import functools
 import inspect
 from concurrent.futures import ThreadPoolExecutor
 
+import comtypes
 from jsonrpcserver import Success, method
 
 from com_wechat.bot import WechatBot
 
-thread_pool_executor = ThreadPoolExecutor(max_workers=4)
+thread_pool_executor = ThreadPoolExecutor(
+    max_workers=4,
+    initializer=comtypes.CoInitializeEx,
+    initargs=(comtypes.COINIT_APARTMENTTHREADED,),
+)
 
 
 class BotRpcHelper:
@@ -27,12 +32,15 @@ class BotRpcHelper:
         WechatBot.search_contact_by_net,
         WechatBot.get_friend_list,
         WechatBot.get_self_info,
+        WechatBot.get_chat_room_member_ids,
+        WechatBot.get_chat_room_member_nickname,
         WechatBot.get_chat_room_members,
         WechatBot.add_friend_by_wxid,
         WechatBot.add_brand_contact,
         WechatBot.get_we_chat_ver,
         WechatBot.is_wx_login,
         WechatBot.delete_user,
+        WechatBot.get_db_handles,
     }
 
     @classmethod
@@ -54,24 +62,17 @@ class BotRpcHelper:
 
     @classmethod
     def register_as_async_rpc_methods(cls):
-        import comtypes
 
         from com_wechat.bot import WechatBotFactory
 
         def factory(func):
-            def _func(*args, **kwargs):
-                comtypes.CoInitialize()
-                r = func(*args, **kwargs)
-                comtypes.CoUninitialize()
-                return r
-
             @functools.wraps(func)
             async def generic_func(wx_pid, *args, **kwargs):
                 bot = WechatBotFactory.get(wx_pid)
                 loop = asyncio.get_event_loop()
                 result = await loop.run_in_executor(
                     thread_pool_executor,
-                    functools.partial(_func, bot, *args, **kwargs),
+                    functools.partial(func, bot, *args, **kwargs),
                 )
                 return Success(result)
 
@@ -92,7 +93,11 @@ def make_docs():
         name = rpc_method.__name__
         description = rpc_method.__doc__
         params = [
-            {"name": "wx_pid", "default": None, "required": True, "annotation": None}
+            {
+                "name": "wx_pid",
+                "default": None,
+                "required": True,
+            }
         ]
 
         for param in s.parameters.values():
@@ -103,9 +108,6 @@ def make_docs():
                     "name": param.name,
                     "default": None if param.default is param.empty else param.default,
                     "required": param.default is param.empty,
-                    "annotation": None
-                    if param.annotation is param.empty
-                    else str(param.annotation),
                 }
             )
         _docs.append({"name": name, "description": description, "params": params})

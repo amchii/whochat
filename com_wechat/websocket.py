@@ -123,6 +123,7 @@ class WechatWebsocketServer:
         websockets.broadcast(self.clients, data)
 
     def shutdown(self):
+        logger.info("停止服务中...")
         self.stop_websocket()
         self.stop_broadcast()
         self.stop_receive_msg()

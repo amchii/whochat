@@ -1,6 +1,6 @@
 import typing
 
-DictIterable = typing.Iterable[typing.Tuple[str, typing.Any]]
+DictIterable = typing.Sequence[typing.Tuple[str, typing.Any]]
 
 
 class CWechatRobotABC:

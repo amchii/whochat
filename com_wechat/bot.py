@@ -1,4 +1,8 @@
 import json
+import os
+import pathlib
+import shutil
+import tempfile
 import threading
 import typing
 from datetime import datetime
@@ -33,7 +37,7 @@ def get_robot_event(com_id) -> RobotEventABC:
 
 class WechatBot:
     def __init__(self, wx_pid, robot_object_id: str, robot_event_id: str = None):
-        self.wx_pid = wx_pid
+        self.wx_pid = int(wx_pid)
         self._robot_object_id = robot_object_id
         self._robot_event_id = robot_event_id
         self.started = False
@@ -76,13 +80,22 @@ class WechatBot:
         return not result
 
     def send_image(self, wx_id, img_path):
-        return self.robot.CSendImage(self.wx_pid, wx_id, img_path)
+        abs_path = pathlib.Path(img_path).absolute()
+        # BUG: (20220821)图片文件名如果有多个"."的话不能成功发送, 所以复制到临时文件进行发送
+        if "." in abs_path.stem:
+            with tempfile.TemporaryDirectory() as td:
+                temp_path = os.path.join(td, os.urandom(5).hex() + abs_path.suffix)
+                shutil.copy(abs_path, temp_path)
+                return self.robot.CSendImage(self.wx_pid, wx_id, temp_path)
+
+        return self.robot.CSendImage(self.wx_pid, wx_id, str(abs_path))
 
     def send_text(self, wx_id, text):
         return self.robot.CSendText(self.wx_pid, wx_id, text)
 
     def send_file(self, wx_id, filepath):
-        return self.robot.CSendFile(self.wx_pid, wx_id, filepath)
+        abs_path = pathlib.Path(filepath).absolute()
+        return self.robot.CSendFile(self.wx_pid, wx_id, str(abs_path))
 
     def send_article(
         self, wxid: str, title: str, abstract: str, url: str, imgpath: str
@@ -104,15 +117,18 @@ class WechatBot:
         )
 
     def get_friend_list(self):
-        return (
-            self.robot.CGetFriendList(
-                self.wx_pid,
+        return [
+            dict(item)
+            for item in (
+                self.robot.CGetFriendList(
+                    self.wx_pid,
+                )
+                or []
             )
-            or []
-        )
+        ]
 
     def get_wx_user_info(self, wxid: str):
-        return self.robot.CGetWxUserInfo(self.wx_pid, wxid)
+        return json.loads(self.robot.CGetWxUserInfo(self.wx_pid, wxid))
 
     def get_self_info(self, refresh=False):
         if refresh or not self.user_info:
@@ -143,14 +159,42 @@ class WechatBot:
             self.wx_pid,
         )
 
-    def get_chat_room_members(self, chatroom_id: str):
-        return self.robot.CGetChatRoomMembers(self.wx_pid, chatroom_id)
+    def get_chat_room_member_ids(self, chatroom_id: str):
+        wx_ids_str: str = self.robot.CGetChatRoomMembers(self.wx_pid, chatroom_id)[1][1]
+        wx_ids = wx_ids_str.split("^G")
+        return wx_ids
+
+    def get_chat_room_member_nickname(self, chatroom_id: str, wxid: str):
+        return self.robot.CGetChatRoomMemberNickname(self.wx_pid, chatroom_id, wxid)
+
+    def get_chat_room_members(self, chatroom_id: str) -> list[dict]:
+        """
+        获取群成员id及昵称信息
+
+        [
+            {
+                "wx_id": "",
+                "nickname": ""
+            }
+        ]
+        """
+        results = []
+        for wx_id in self.get_chat_room_member_ids(chatroom_id):
+            results.append(
+                {
+                    "wx_id": wx_id,
+                    "nickname": self.get_chat_room_member_nickname(chatroom_id, wx_id),
+                }
+            )
+        return results
 
     def add_friend_by_wxid(self, wxid: str, message: str):
         return self.robot.CAddFriendByWxid(self.wx_pid, wxid, message)
 
     def search_contact_by_net(self, keyword: str):
-        return self.robot.CSearchContactByNet(self.wx_pid, keyword)
+        return [
+            dict(item) for item in self.robot.CSearchContactByNet(self.wx_pid, keyword)
+        ]
 
     def add_brand_contact(self, public_id: str):
         return self.robot.CAddBrandContact(self.wx_pid, public_id)
@@ -168,6 +212,9 @@ class WechatBot:
         return self.robot.CIsWxLogin(
             self.wx_pid,
         )
+
+    def get_db_handles(self):
+        return [dict(item) for item in self.robot.CGetDbHandles(self.wx_pid)]
 
     def register_event(self, event_sink: RobotEventSinkABC):
         if self.event_connection:

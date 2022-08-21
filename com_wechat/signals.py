@@ -17,7 +17,7 @@ class Signal:
 
     @classmethod
     def register_sigint(cls, func):
-        logger.info(f"注册SIGINT信号处理程序: {func}")
+        logger.info(f"注册SIGINT信号处理程序: {func.__qualname__}")
         cls.register(signal.SIGINT, func)
 
     @classmethod
@@ -26,7 +26,7 @@ class Signal:
 
     @classmethod
     def handler(cls, signum, frame):
-        logger.info(f"接收到信号: {signum}")
+        logger.info(f"接收到信号: {signal.strsignal(signum)}")
         for _handler in cls._signal_handlers[signum]:
             try:
                 _handler()
