@@ -6,7 +6,7 @@ import threading
 import time
 import typing
 from collections import deque
-from ctypes import Structure, c_wchar, sizeof, wintypes
+from ctypes import Structure, c_ulonglong, c_wchar, sizeof, wintypes
 
 import comtypes
 
@@ -20,6 +20,7 @@ class ReceiveMsgStruct(Structure):
         ("pid", wintypes.DWORD),
         ("type", wintypes.DWORD),
         ("is_send_msg", wintypes.DWORD),
+        ("msgid", c_ulonglong),
         ("sender", c_wchar * 80),
         ("wxid", c_wchar * 80),
         ("message", c_wchar * 0x1000B),
@@ -74,9 +75,9 @@ class WechatReceiveMsgTCPServer(socketserver.ThreadingTCPServer):
 
     def __init__(
         self,
+        wx_pid: int,
         port: int,
         RequestHandlerClass: typing.Callable[..., ReceiveMsgHandler],
-        wx_pid=None,
         **kwargs,
     ):
         self.wx_pid = wx_pid
@@ -132,8 +133,9 @@ class WechatReceiveMsgRedirectTCPServer(WechatReceiveMsgTCPServer):
 
     def __init__(
         self,
+        wx_pid: int,
         port: int,
-        redirect_key=b"",
+        redirect_key: bytes,
         RequestHandlerClass: typing.Callable[
             ..., StoreReceiveMsgHandler
         ] = StoreReceiveMsgHandler,
@@ -146,19 +148,22 @@ class WechatReceiveMsgRedirectTCPServer(WechatReceiveMsgTCPServer):
         self.redirect_key = redirect_key
         self.stop_redirect = False
         assert len(self.redirect_key) <= 16
-        super().__init__(port, RequestHandlerClass, **kwargs)
+        super().__init__(wx_pid, port, RequestHandlerClass, **kwargs)
         logger.info(f"转发Key为: {self.redirect_key}")
         Signal.register_sigint(self.shutdown)
 
     def finish_request(self, request, client_address) -> None:
-        flag = request.recv(len(self.redirect_key))
-        if flag == self.redirect_key:
-            self.redirects.add(request)
-            logger.info(f"已添加一个接受消息转发的客户端：{client_address}")
+        if self.redirect_key:
+            flag = request.recv(len(self.redirect_key))
+            if flag == self.redirect_key:
+                self.redirects.add(request)
+                logger.info(f"已添加一个接受消息转发的客户端：{client_address}")
+            else:
+                self.RequestHandlerClass(
+                    request, client_address, self, self.dqueue, initial_data=flag
+                )
         else:
-            self.RequestHandlerClass(
-                request, client_address, self, self.dqueue, initial_data=flag
-            )
+            self.RequestHandlerClass(request, client_address, self, self.dqueue)
 
     def shutdown_request(self, request) -> None:
         if request in self.redirects:
