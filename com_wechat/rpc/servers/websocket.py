@@ -4,7 +4,7 @@ import logging
 import websockets
 from jsonrpcserver import async_dispatch
 
-logger = logging.getLogger("wechat")
+logger = logging.getLogger("whochat")
 
 
 async def dispatch_in_task(websocket, request):
