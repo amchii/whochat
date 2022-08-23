@@ -10,7 +10,7 @@ import comtypes
 import schedule
 from jsonrpcserver import InvalidParams, Success, methods
 
-from com_wechat.bot import WechatBot
+from whochat.bot import WechatBot
 
 logger = logging.getLogger("whochat")
 
@@ -59,7 +59,7 @@ class BotRpcHelper:
         if cls.rpc_methods:
             return cls.rpc_methods
 
-        from com_wechat.bot import WechatBotFactory
+        from whochat.bot import WechatBotFactory
 
         for name, function in cls.bot_methods.items():
 
@@ -76,7 +76,7 @@ class BotRpcHelper:
         if cls.async_rpc_methods:
             return cls.async_rpc_methods
 
-        from com_wechat.bot import WechatBotFactory
+        from whochat.bot import WechatBotFactory
 
         def factory(func):
             @functools.wraps(func)
