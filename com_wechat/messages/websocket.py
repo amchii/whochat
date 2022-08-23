@@ -7,12 +7,11 @@ import comtypes
 import comtypes.client
 import websockets
 
+from com_wechat.abc import RobotEventSinkABC
 from com_wechat.bot import WechatBotFactory
-
-from .abc import RobotEventSinkABC
-from .logger import logger
-from .signals import Signal
-from .utils import EventWaiter
+from com_wechat.logger import logger
+from com_wechat.signals import Signal
+from com_wechat.utils import EventWaiter
 
 
 class MessageEventStoreSink(RobotEventSinkABC):

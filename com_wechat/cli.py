@@ -1,5 +1,7 @@
 import click
 
+from com_wechat.rpc.handlers import register_rpc_methods
+
 
 @click.group(
     name="wechat-bot",
@@ -41,7 +43,7 @@ def serve_message_ws(host, port, wx_pids):
     """
     import asyncio
 
-    from com_wechat.websocket import WechatWebsocketServer
+    from com_wechat.messages.websocket import WechatWebsocketServer
 
     if not wx_pids:
         raise click.BadArgumentUsage("请指定至少一个微信进程PID")
@@ -57,13 +59,15 @@ def serve_message_ws(host, port, wx_pids):
 def show_rpc_docs():
     """
     列出RPC接口
+
+    \b
+    whochat show-rpc-docs > docs.json
     """
     import json
 
-    from com_wechat.rpc.bot_helper import make_docs
+    from com_wechat.rpc.handlers import make_docs
 
-    for doc in make_docs():
-        click.echo(json.dumps(doc, ensure_ascii=False, indent=4))
+    click.echo(json.dumps(make_docs(), ensure_ascii=False, indent=4))
 
 
 @wechat_bot.command()
@@ -77,10 +81,9 @@ def serve_rpc_ws(host, port):
     """
     import asyncio
 
-    from com_wechat.rpc.bot_helper import BotRpcHelper
     from com_wechat.rpc.servers.websocket import run
 
-    BotRpcHelper.register_as_async_rpc_methods()
+    register_rpc_methods()
 
     asyncio.run(run(host, port))
 
@@ -98,8 +101,7 @@ def serve_rpc_http(host, port):
     """
     import uvicorn
 
-    from com_wechat.rpc.bot_helper import BotRpcHelper
     from com_wechat.rpc.servers.http import app
 
-    BotRpcHelper.register_as_async_rpc_methods()
+    register_rpc_methods()
     uvicorn.run(app, host=host, port=port)
