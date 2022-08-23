@@ -1,6 +1,6 @@
 import click
 
-from com_wechat.rpc.handlers import register_rpc_methods
+from whochat.rpc.handlers import register_rpc_methods
 
 
 @click.group(
@@ -17,7 +17,7 @@ def wechat_bot():
 @wechat_bot.command()
 def list_wechat():
     """列出当前运行的微信进程"""
-    from com_wechat.bot import WechatBotFactory
+    from whochat.bot import WechatBotFactory
 
     s = ""
     for r in WechatBotFactory.list_wechat():
@@ -43,7 +43,7 @@ def serve_message_ws(host, port, wx_pids):
     """
     import asyncio
 
-    from com_wechat.messages.websocket import WechatWebsocketServer
+    from whochat.messages.websocket import WechatWebsocketServer
 
     if not wx_pids:
         raise click.BadArgumentUsage("请指定至少一个微信进程PID")
@@ -65,7 +65,7 @@ def show_rpc_docs():
     """
     import json
 
-    from com_wechat.rpc.handlers import make_docs
+    from whochat.rpc.handlers import make_docs
 
     click.echo(json.dumps(make_docs(), ensure_ascii=False, indent=4))
 
@@ -81,7 +81,7 @@ def serve_rpc_ws(host, port):
     """
     import asyncio
 
-    from com_wechat.rpc.servers.websocket import run
+    from whochat.rpc.servers.websocket import run
 
     register_rpc_methods()
 
@@ -101,7 +101,7 @@ def serve_rpc_http(host, port):
     """
     import uvicorn
 
-    from com_wechat.rpc.servers.http import app
+    from whochat.rpc.servers.http import app
 
     register_rpc_methods()
     uvicorn.run(app, host=host, port=port)

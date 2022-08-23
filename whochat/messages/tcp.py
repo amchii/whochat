@@ -10,9 +10,9 @@ from ctypes import Structure, c_ulonglong, c_wchar, sizeof, wintypes
 
 import comtypes
 
-from com_wechat.bot import WechatBot, WechatBotFactory
-from com_wechat.logger import logger
-from com_wechat.signals import Signal
+from whochat.bot import WechatBot, WechatBotFactory
+from whochat.logger import logger
+from whochat.signals import Signal
 
 
 class ReceiveMsgStruct(Structure):
