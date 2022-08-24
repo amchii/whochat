@@ -1,12 +1,14 @@
+import os
+
 import click
 
 from whochat.rpc.handlers import register_rpc_methods
 
 
 @click.group(
-    name="wechat-bot",
+    name="whochat",
 )
-def wechat_bot():
+def whochat():
     """
     微信机器人
 
@@ -14,7 +16,7 @@ def wechat_bot():
     """
 
 
-@wechat_bot.command()
+@whochat.command()
 def list_wechat():
     """列出当前运行的微信进程"""
     from whochat.bot import WechatBotFactory
@@ -29,7 +31,7 @@ def list_wechat():
     click.echo(s)
 
 
-@wechat_bot.command()
+@whochat.command()
 @click.option(
     "--host", "-h", default="localhost", show_default=True, help="Server host."
 )
@@ -55,7 +57,7 @@ def serve_message_ws(host, port, wx_pids):
     asyncio.run(main())
 
 
-@wechat_bot.command()
+@whochat.command()
 def show_rpc_docs():
     """
     列出RPC接口
@@ -70,7 +72,7 @@ def show_rpc_docs():
     click.echo(json.dumps(make_docs(), ensure_ascii=False, indent=4))
 
 
-@wechat_bot.command()
+@whochat.command()
 @click.option(
     "--host", "-h", default="localhost", show_default=True, help="Server host."
 )
@@ -83,12 +85,13 @@ def serve_rpc_ws(host, port):
 
     from whochat.rpc.servers.websocket import run
 
+    click.echo(f"PID: {os.getpid()}")
     register_rpc_methods()
 
     asyncio.run(run(host, port))
 
 
-@wechat_bot.command()
+@whochat.command()
 @click.option(
     "--host", "-h", default="localhost", show_default=True, help="Server host."
 )
