@@ -3,6 +3,7 @@ import dataclasses
 import functools
 import inspect
 import logging
+import time
 import typing
 from concurrent.futures import ThreadPoolExecutor
 
@@ -11,10 +12,11 @@ import schedule
 from jsonrpcserver import InvalidParams, Success, methods
 
 from whochat.bot import WechatBot
+from whochat.signals import Signal
 
 logger = logging.getLogger("whochat")
 
-thread_pool_executor = ThreadPoolExecutor(
+bot_executor = ThreadPoolExecutor(
     max_workers=4,
     initializer=comtypes.CoInitializeEx,
     initargs=(comtypes.COINIT_APARTMENTTHREADED,),
@@ -61,14 +63,18 @@ class BotRpcHelper:
 
         from whochat.bot import WechatBotFactory
 
-        for name, function in cls.bot_methods.items():
-
-            @functools.wraps(function)
+        def factory(func):
+            @functools.wraps(func)
             def generic_func(wx_pid, *args, **kwargs):
                 bot = WechatBotFactory.get(wx_pid)
-                return Success(functools.partial(function, bot, *args, **kwargs))
+                _func = functools.partial(func, bot, *args, **kwargs)
+                return Success(_func())
 
-            cls.rpc_methods[name] = generic_func
+            return generic_func
+
+        for name, function in cls.bot_methods.items():
+
+            cls.rpc_methods[name] = factory(function)
         return cls.rpc_methods
 
     @classmethod
@@ -82,9 +88,9 @@ class BotRpcHelper:
             @functools.wraps(func)
             async def generic_func(wx_pid, *args, **kwargs):
                 bot = WechatBotFactory.get(wx_pid)
-                loop = asyncio.get_event_loop()
+                loop = asyncio.get_running_loop()
                 result = await loop.run_in_executor(
-                    thread_pool_executor,
+                    bot_executor,
                     functools.partial(func, bot, *args, **kwargs),
                 )
                 return Success(result)
@@ -145,9 +151,47 @@ class BotJob:
         }
 
 
+scheduler_executor = ThreadPoolExecutor(
+    max_workers=2,
+    initializer=comtypes.CoInitializeEx,
+    initargs=(comtypes.COINIT_APARTMENTTHREADED,),
+)
+
+
 class BotScheduler:
-    def __init__(self):
+    def __init__(self, loop=None):
         self.jobs: dict[str, "BotJob"] = {}
+        self._loop = loop
+        self.executor = scheduler_executor
+        self.scheduler = schedule.default_scheduler
+        self.scheduled = False
+        self.__shutdown = False
+
+    @property
+    def loop(self):
+        if self._loop is None:
+            self._loop = asyncio.get_running_loop()
+        return self._loop
+
+    def run(self):
+        logger.info("开始运行任务消费线程")
+        while not self.__shutdown:
+            self.scheduler.run_pending()
+            time.sleep(0.3)
+        logger.info("任务消费线程已停止")
+
+    def schedule(self):
+        if self.scheduled:
+            return
+        self.scheduled = True
+        Signal.register_sigint(self.shutdown)
+        self.executor.submit(self.run)
+
+    def shutdown(self):
+        logger.info("正在取消所有任务...")
+        self.__shutdown = True
+        self._cancel_jobs()
+        self.executor.shutdown(wait=False)
 
     async def schedule_a_job(
         self,
@@ -183,34 +227,45 @@ class BotScheduler:
         :param description: 描述
         :param tags: 标签，总会添加任务名作为标签
         """
+        self.schedule()
         try:
             job = BotJob(name, unit, every, at, do, description, tags or [])
             assert job.name not in self.jobs
             self.jobs[job.name] = job
-            schedule_job = schedule.every(job.every)
+            schedule_job = self.scheduler.every(job.every)
             schedule_job.unit = job.unit
-            schedule_job.at(job.at).do(job.job_func).tags(*job.tags, job.name)
+            schedule_job.at(job.at).do(job.job_func).tag(*job.tags, job.name)
         except AssertionError:
-            raise InvalidParams(f"任务<{name}>已存在")
+            return InvalidParams(f"任务<{name}>已存在")
         except Exception as e:
-            raise InvalidParams(f"参数错误: {str(e)}")
+            return InvalidParams(f"参数错误: {str(e)}")
+        return Success()
 
-    async def cancel_job(self, tag):
+    def _cancel_jobs(self, tag=None):
+        if tag is None:
+            self.jobs.clear()
+        self.jobs.pop(tag, None)
+        self.scheduler.clear(tag=tag)
+        return Success()
+
+    async def cancel_jobs(self, tag=None):
         """
         取消任务
         :param tag: 标签名
         """
-        self.jobs.pop(tag, None)
-        schedule.clear(tag=tag)
+        await self.loop.run_in_executor(
+            self.executor, functools.partial(self._cancel_jobs, tag=tag)
+        )
+        return Success()
 
-    async def list_jobs(self) -> dict[str, dict]:
+    async def list_jobs(self):
         """列出所有任务"""
-        return {name: job.as_dict() for name, job in self.jobs.items()}
+        return Success({name: job.as_dict() for name, job in self.jobs.items()})
 
     def get_rpc_methods(self) -> dict[str, typing.Callable]:
         return {
             method.__name__: method
-            for method in [self.schedule_a_job, self.cancel_job, self.list_jobs]
+            for method in [self.schedule_a_job, self.cancel_jobs, self.list_jobs]
         }
 
 
