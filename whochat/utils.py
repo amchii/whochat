@@ -90,3 +90,7 @@ class EventWaiter:
                 pass
         finally:
             self.close_handle()
+
+
+def as_admin(exe: str, params: str = None):
+    ctypes.windll.shell32.ShellExecuteW(None, "runas", exe, params)

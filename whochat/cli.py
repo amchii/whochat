@@ -17,6 +17,30 @@ def whochat():
 
 
 @whochat.command()
+def version():
+    """显示程序和支持微信的版本信息"""
+    from whochat import __version__
+    from whochat.ComWeChatRobot import __wechat_version__
+
+    s = ""
+    s += f"WhoChat version: {__version__}\n"
+    s += f"Supported WeChat version: {__wechat_version__}\n"
+    click.echo(s)
+
+
+@whochat.command()
+@click.option("--unreg", "-R", is_flag=True, default=False, help="取消注册")
+def regserver(unreg):
+    """注册COM"""
+    from whochat.ComWeChatRobot import register, unregister
+
+    if unreg:
+        unregister()
+    else:
+        register()
+
+
+@whochat.command()
 def list_wechat():
     """列出当前运行的微信进程"""
     from whochat.bot import WechatBotFactory
@@ -58,18 +82,24 @@ def serve_message_ws(host, port, wx_pids):
 
 
 @whochat.command()
-def show_rpc_docs():
+@click.option("--json", "json_", is_flag=True, default=False, help="JSON文档")
+def show_rpc_docs(json_):
     """
     列出RPC接口
 
     \b
-    whochat show-rpc-docs > docs.json
+    whochat show-rpc-docs
+    or
+    whochat show-rpc-docs --json > docs.json
     """
     import json
 
-    from whochat.rpc.handlers import make_docs
+    from whochat.rpc.docs import make_docs, pretty_docs
 
-    click.echo(json.dumps(make_docs(), ensure_ascii=False, indent=4))
+    if json_:
+        click.echo(json.dumps(make_docs(), ensure_ascii=False, indent=4))
+    else:
+        click.echo(pretty_docs())
 
 
 @whochat.command()

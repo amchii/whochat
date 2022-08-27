@@ -1,7 +1,6 @@
 import asyncio
 import dataclasses
 import functools
-import inspect
 import logging
 import time
 import typing
@@ -11,7 +10,7 @@ import comtypes
 import schedule
 from jsonrpcserver import InvalidParams, Success, methods
 
-from whochat.bot import WechatBot
+from whochat.bot import WechatBot, WechatBotFactory
 from whochat.signals import Signal
 
 logger = logging.getLogger("whochat")
@@ -51,6 +50,7 @@ class BotRpcHelper:
             WechatBot.is_wx_login,
             WechatBot.delete_user,
             WechatBot.get_db_handles,
+            WechatBotFactory.list_wechat,
         ]
     }
     rpc_methods = {}
@@ -65,15 +65,21 @@ class BotRpcHelper:
 
         def factory(func):
             @functools.wraps(func)
-            def generic_func(wx_pid, *args, **kwargs):
+            def bot_self_func(wx_pid, *args, **kwargs):
                 bot = WechatBotFactory.get(wx_pid)
                 _func = functools.partial(func, bot, *args, **kwargs)
                 return Success(_func())
 
-            return generic_func
+            @functools.wraps(func)
+            def normal_func(*args, **kwargs):
+                _func = functools.partial(func, *args, **kwargs)
+                return Success(_func())
+
+            if func.__qualname__.split(".", maxsplit=1)[0] == "WechatBot":
+                return bot_self_func
+            return normal_func
 
         for name, function in cls.bot_methods.items():
-
             cls.rpc_methods[name] = factory(function)
         return cls.rpc_methods
 
@@ -86,7 +92,7 @@ class BotRpcHelper:
 
         def factory(func):
             @functools.wraps(func)
-            async def generic_func(wx_pid, *args, **kwargs):
+            async def bot_self_func(wx_pid, *args, **kwargs):
                 bot = WechatBotFactory.get(wx_pid)
                 loop = asyncio.get_running_loop()
                 result = await loop.run_in_executor(
@@ -95,7 +101,16 @@ class BotRpcHelper:
                 )
                 return Success(result)
 
-            return generic_func
+            @functools.wraps(func)
+            async def normal_func(*args, **kwargs):
+                _func = functools.partial(func, *args, **kwargs)
+                loop = asyncio.get_running_loop()
+                result = await loop.run_in_executor(bot_executor, _func)
+                return Success(result)
+
+            if func.__qualname__.split(".", maxsplit=1)[0] == "WechatBot":
+                return bot_self_func
+            return normal_func
 
         for name, function in cls.bot_methods.items():
             cls.async_rpc_methods[name] = factory(function)
@@ -270,51 +285,6 @@ class BotScheduler:
 
 
 default_bot_scheduler = BotScheduler()
-
-_docs = []
-
-
-def make_docs():
-    if _docs:
-        return _docs
-    for name, rpc_method in BotRpcHelper.bot_methods.items():
-        s = inspect.signature(rpc_method)
-        description = rpc_method.__doc__
-        params = [
-            {
-                "name": "wx_pid",
-                "default": None,
-                "required": True,
-            }
-        ]
-
-        for param in s.parameters.values():
-            if param.name == "self":
-                continue
-            params.append(
-                {
-                    "name": param.name,
-                    "default": None if param.default is param.empty else param.default,
-                    "required": param.default is param.empty,
-                }
-            )
-        _docs.append({"name": name, "description": description, "params": params})
-
-    for name, rpc_method in default_bot_scheduler.get_rpc_methods().items():
-        s = inspect.signature(rpc_method)
-        description = rpc_method.__doc__
-        params = []
-        for param in s.parameters.values():
-            params.append(
-                {
-                    "name": param.name,
-                    "default": None if param.default is param.empty else param.default,
-                    "required": param.default is param.empty,
-                }
-            )
-        _docs.append({"name": name, "description": description, "params": params})
-
-    return _docs
 
 
 def register_rpc_methods():
