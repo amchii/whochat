@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.responses import RedirectResponse
 from jsonrpcserver import async_dispatch
 
-from whochat.rpc.handlers import make_docs
+from whochat.rpc.docs import make_docs
 
 app = FastAPI(title="微信机器人RPC接口文档", description="HTTP和Websocket均使用JSON-RPC2.0进行函数调用")
 
