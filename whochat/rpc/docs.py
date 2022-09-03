@@ -1,4 +1,5 @@
 import inspect
+from collections import OrderedDict
 
 from jsonrpcserver import methods
 
@@ -11,7 +12,13 @@ def make_docs():
     if _docs:
         return _docs
     register_rpc_methods()
-    for name, rpc_method in methods.global_methods.items():
+
+    for name, rpc_method in OrderedDict(
+        {
+            key: methods.global_methods[key]
+            for key in sorted(methods.global_methods.keys())
+        }
+    ).items():
         s = inspect.signature(rpc_method)
         description = rpc_method.__doc__
         params = []

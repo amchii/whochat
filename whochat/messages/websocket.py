@@ -1,5 +1,7 @@
 import asyncio
+import base64
 import json
+import re
 from collections import deque
 from functools import partial
 
@@ -18,8 +20,30 @@ class MessageEventStoreSink(RobotEventSinkABC):
     def __init__(self, deque_: deque):
         self.deque_ = deque_
 
+    @staticmethod
+    def _parse_extrainfo(extrainfo):
+        extrainfo = base64.b64decode(extrainfo)
+        extra = {"is_at_msg": False}
+        m = re.search(rb"<atuserlist><!\[CDATA\[(.*?)\]\]></atuserlist>", extrainfo)
+        if m:
+            extra["is_at_msg"] = True
+            extra["at_user_list"] = m.group(1).decode().split(",")
+        m = re.search(rb"<membercount>(\d+)</membercount>", extrainfo)
+        if m:
+            extra["member_count"] = int(m.group(1))
+        return extra
+
     def OnGetMessageEvent(self, msg):
-        data = dict(msg)
+        try:
+            data = json.loads(msg)
+            if "@chatroom" not in data["sender"]:
+                data["extrainfo"] = None
+            else:
+                data["extrainfo"] = self._parse_extrainfo(data["extrainfo"])
+        except (json.JSONDecodeError, TypeError) as e:
+            logger.warning("接收消息错误: ")
+            logger.exception(e)
+            return
         logger.info(f"收到消息: {data}")
         self.deque_.append(data)
 
@@ -101,6 +125,10 @@ class WechatWebsocketServer:
 
     def stop_receive_msg(self):
         self._event_waiter.stop()
+        for wx_pid in self.wx_pids:
+            bot = WechatBotFactory.get(wx_pid)
+            bot.stop_receive_message()
+            bot.stop_robot_service()
 
     def stop_broadcast(self):
         self._stop_broadcast = True
