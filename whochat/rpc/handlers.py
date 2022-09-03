@@ -3,8 +3,8 @@ import dataclasses
 import functools
 import logging
 import time
-import typing
 from concurrent.futures import ThreadPoolExecutor
+from typing import Callable, Dict, List
 
 import comtypes
 import schedule
@@ -145,8 +145,8 @@ class BotJob:
     at: str
     do: dict
     description: str = None
-    tags: list[str] = dataclasses.field(default_factory=list)
-    _job_func: typing.Callable = dataclasses.field(init=False, default=None)
+    tags: List[str] = dataclasses.field(default_factory=list)
+    _job_func: Callable = dataclasses.field(init=False, default=None)
 
     def __post_init__(self):
         func_name, func_args = self.do["func"], self.do["args"]
@@ -179,7 +179,7 @@ scheduler_executor = ThreadPoolExecutor(
 
 class BotScheduler:
     def __init__(self, loop=None):
-        self.jobs: dict[str, "BotJob"] = {}
+        self.jobs: Dict[str, "BotJob"] = {}
         self._loop = loop
         self.executor = scheduler_executor
         self.scheduler = schedule.default_scheduler
@@ -281,7 +281,7 @@ class BotScheduler:
         """列出所有任务"""
         return Success({name: job.as_dict() for name, job in self.jobs.items()})
 
-    def get_rpc_methods(self) -> dict[str, typing.Callable]:
+    def get_rpc_methods(self) -> Dict[str, Callable]:
         return {
             method.__name__: method
             for method in [self.schedule_a_job, self.cancel_jobs, self.list_jobs]

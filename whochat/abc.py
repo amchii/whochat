@@ -1,6 +1,6 @@
-import typing
+from typing import Any, List, Sequence, Tuple, Union
 
-DictIterable = typing.Sequence[typing.Tuple[str, typing.Any]]
+DictIterable = Sequence[Tuple[str, Any]]
 
 
 class CWechatRobotABC:
@@ -33,7 +33,7 @@ class CWechatRobotABC:
         self,
         wx_pid: int,
         chatroomid: str,
-        at_wxids: typing.Union[str, typing.List[str]],
+        at_wxids: Union[str, List[str]],
         text: str,
         auto_nickname: bool = True,
     ) -> int:
@@ -142,10 +142,10 @@ class CWechatRobotABC:
     def CGetChatRoomMemberNickname(self, wx_pid: int, chatroomid: str, wxid: str):
         ...
 
-    def CDelChatRoomMember(self, wx_pid: int, chatroomid: str, wxids: list[str]):
+    def CDelChatRoomMember(self, wx_pid: int, chatroomid: str, wxids: List[str]):
         ...
 
-    def CAddChatRoomMember(self, wx_pid: int, chatroomid: str, wxids: list[str]):
+    def CAddChatRoomMember(self, wx_pid: int, chatroomid: str, wxids: List[str]):
         ...
 
 
