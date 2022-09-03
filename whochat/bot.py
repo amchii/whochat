@@ -4,8 +4,8 @@ import pathlib
 import shutil
 import tempfile
 import threading
-import typing
 from datetime import datetime
+from typing import Dict, List, Union
 
 from .utils import guess_wechat_user_by_paths
 
@@ -108,7 +108,7 @@ class WechatBot:
     def send_at_text(
         self,
         chatroom_id: str,
-        at_wxids: typing.Union[str, typing.List[str]],
+        at_wxids: Union[str, List[str]],
         text: str,
         auto_nickname: bool = True,
     ):
@@ -167,7 +167,7 @@ class WechatBot:
     def get_chat_room_member_nickname(self, chatroom_id: str, wxid: str):
         return self.robot.CGetChatRoomMemberNickname(self.wx_pid, chatroom_id, wxid)
 
-    def get_chat_room_members(self, chatroom_id: str) -> list[dict]:
+    def get_chat_room_members(self, chatroom_id: str) -> List[dict]:
         """
         获取群成员id及昵称信息
 
@@ -251,7 +251,7 @@ class WechatBotFactory(metaclass=WechatBotFactoryMetaclass):
     单例
     """
 
-    _instances = {}
+    _instances: Dict[int, "WechatBot"] = {}
     _robot_object_id = "WeChatRobot.CWeChatRobot"
     _robot_event_id = "WeChatRobot.RobotEvent"
 
@@ -264,6 +264,12 @@ class WechatBotFactory(metaclass=WechatBotFactoryMetaclass):
         return cls._instances[wx_pid]
 
     @classmethod
+    def exit(cls):
+        logger.info("卸载注入的dll...")
+        for instance in cls._instances.values():
+            instance.stop_robot_service()
+
+    @classmethod
     def get_we_chat_ver(cls) -> str:
         return cls.robot.CGetWeChatVer()
 
@@ -272,7 +278,7 @@ class WechatBotFactory(metaclass=WechatBotFactoryMetaclass):
         return cls.robot.CStartWeChat()
 
     @classmethod
-    def list_wechat(cls) -> list[dict]:
+    def list_wechat(cls) -> List[dict]:
         results = []
         for process in psutil.process_iter():
             if process.name().lower() == "wechat.exe":

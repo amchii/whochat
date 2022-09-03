@@ -26,6 +26,9 @@ async def run(host, port):
     def shutdown():
         logger.info("正在停止微信机器人RPC websocket服务...")
         stop_event.set()
+        from whochat.bot import WechatBotFactory
+
+        WechatBotFactory.exit()
 
     Signal.register_sigint(shutdown)
     async with websockets.serve(handler, host, port):

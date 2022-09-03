@@ -4,6 +4,7 @@ import json
 import re
 from collections import deque
 from functools import partial
+from typing import List
 
 import comtypes
 import comtypes.client
@@ -51,7 +52,7 @@ class MessageEventStoreSink(RobotEventSinkABC):
 class WechatWebsocketServer:
     def __init__(
         self,
-        wx_pids: list[int],
+        wx_pids: List[int],
         ws_host: str = None,
         ws_port: int = 9001,
         queue: asyncio.Queue = None,

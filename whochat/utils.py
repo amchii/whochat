@@ -3,7 +3,7 @@ import random
 import re
 import socket
 import string
-import typing
+from typing import List, Optional
 
 
 def get_free_port():
@@ -22,7 +22,7 @@ def get_random_string(size):
 
 
 # Windows Only
-def guess_wechat_user_by_path(path: str) -> typing.Optional[str]:
+def guess_wechat_user_by_path(path: str) -> Optional[str]:
     """
 
     :param path: e.g. "C:\\Users\\foo\\Documents\\WeChat Files\\<wxid>\\Msg\\Sns.db"
@@ -34,7 +34,7 @@ def guess_wechat_user_by_path(path: str) -> typing.Optional[str]:
     return m.group(1)
 
 
-def guess_wechat_user_by_paths(paths: list[str]) -> typing.Optional[str]:
+def guess_wechat_user_by_paths(paths: List[str]) -> Optional[str]:
     for path in paths:
         user = guess_wechat_user_by_path(path)
         if user:
