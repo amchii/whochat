@@ -288,6 +288,10 @@ class WechatBotFactory(metaclass=WechatBotFactoryMetaclass):
         return results
 
     @classmethod
+    def get_robot_pid(cls):
+        return cls.robot_pid
+
+    @classmethod
     def kill_robot(cls):
         bot_pid = cls.robot_pid
         logger.info(f"尝试结束CWeChatRobot进程: pid {bot_pid}")

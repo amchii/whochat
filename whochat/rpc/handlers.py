@@ -51,6 +51,10 @@ class BotRpcHelper:
             WechatBot.delete_user,
             WechatBot.get_db_handles,
             WechatBotFactory.list_wechat,
+            WechatBotFactory.start_wechat,
+            WechatBotFactory.get_we_chat_ver,
+            WechatBotFactory.get_robot_pid,
+            WechatBotFactory.kill_robot,
         ]
     }
     rpc_methods = {}

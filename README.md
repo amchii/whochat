@@ -85,7 +85,28 @@ Options:
 ```
 默认地址为`localhost:9001`，连接测试：
 ![WebSocket测试](https://user-images.githubusercontent.com/26922464/187036096-3a780aaa-e79e-4c82-abb2-9f7c402601a1.gif)
-
+当前接收消息格式示例:
+```json
+{
+    "extrainfo": {  // 额外信息, 该字段当前仅群消息时有意义
+        "is_at_msg": true,  // 是否为at消息
+        "at_user_list": [  // 被at的用户wxid
+            "wx_user_id1",
+            "wx_user_id2"
+        ],
+        "member_count": 23  // 群成员数量
+    },
+    "filepath": "",
+    "isSendMsg": 0,
+    "message": "@wx_user1\u2005@wx_user2\u2005Hello",
+    "msgid": 7495392442139043211,
+    "pid": 17900,
+    "sender": "20813132945@chatroom",
+    "time": "2022-09-03 22: 10: 33",
+    "type": 1,
+    "wxid": "wx_user_id10"
+}
+```
 4. 开启WebSocket RPC服务进行方法调用：
 ```
 > whochat serve-rpc-ws
