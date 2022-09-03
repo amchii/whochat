@@ -1,3 +1,4 @@
+import logging
 import os
 
 import click
@@ -8,12 +9,23 @@ from whochat.rpc.handlers import register_rpc_methods
 @click.group(
     name="whochat",
 )
-def whochat():
+@click.option(
+    "--log-level",
+    "-l",
+    "log_level",
+    default="info",
+    show_default=True,
+    help="日志等级, `debug`, `info`, `warn`, `error`",
+)
+def whochat(log_level: str):
     """
     微信机器人
 
     使用<子命令> --help查看使用说明
     """
+    logger = logging.getLogger("whochat")
+    logging.getLevelName(log_level)
+    logger.setLevel(log_level.upper())
 
 
 @whochat.command()
