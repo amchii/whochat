@@ -147,51 +147,44 @@ Options:
 在每天上午6点整喊基友起床，同样使用RPC调用`schedule_a_job`（获取接口文档见*4*）,
 ```json
 {
-
     "jsonrpc": "2.0",
-
     "method": "schedule_a_job",
-
     "params": {
-
         "name": "GETUP",
-
         "unit": "days",
-
         "every": 1,
-
         "at": "08:00:00",
-
         "do": {
-
             "func": "send_text",
-
             "args": [
-
                 102852,
-
                 "jiyou",
-
                 "GET UP!"
-
             ]
-
         },
-
         "description": "",
-
         "tags": [
-
             "jiyou"
-
         ]
-
     },
-
     "id": 4
-
 }
 ```
 
-[CHANGELOG](CHANGELOG.md)
+[CHANGELOG](https://github.com/amchii/whochat/blob/main/CHANGELOG.md)
+
+[Tags](https://github.com/amchii/whochat/tags)
+
+## v.1.1.0
+
+* 更新 [Robot DLL](https://github.com/ljc545w/ComWeChatRobot/commit/ff76f80ce2f3d979bf968d07f530701d834dc988)
+* 接收消息增加`extrainfo`字段，当消息为群消息时可获取群成员数量和被@的人的微信ID
+* 命令行增加`log-level`选项控制日志级别
+* 调用bot方法时自动注入dll
+* 添加 [docs/rpc/api.json](https://github.com/amchii/whochat/blob/main/docs/rpc/api.json)
+
+## v1.0.1
+
+* 添加Python版本依赖说明
+
 ## 欢迎学习交流
