@@ -1,0 +1,497 @@
+[
+    {
+        "name": "add_brand_contact",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "public_id",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "add_friend_by_wxid",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "wxid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "message",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "cancel_jobs",
+        "description": "\n        取消任务\n        :param tag: 标签名\n        ",
+        "params": [
+            {
+                "name": "tag",
+                "default": null,
+                "required": false
+            }
+        ]
+    },
+    {
+        "name": "delete_user",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "wxid",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "get_chat_room_member_ids",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "chatroom_id",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "get_chat_room_member_nickname",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "chatroom_id",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "wxid",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "get_chat_room_members",
+        "description": "\n        获取群成员id及昵称信息\n\n        [\n            {\n                \"wx_id\": \"\",\n                \"nickname\": \"\"\n            }\n        ]\n        ",
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "chatroom_id",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "get_db_handles",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "get_friend_list",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "get_robot_pid",
+        "description": null,
+        "params": []
+    },
+    {
+        "name": "get_self_info",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "refresh",
+                "default": false,
+                "required": false
+            }
+        ]
+    },
+    {
+        "name": "get_we_chat_ver",
+        "description": null,
+        "params": []
+    },
+    {
+        "name": "get_wx_user_info",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "wxid",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "is_wx_login",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "kill_robot",
+        "description": null,
+        "params": []
+    },
+    {
+        "name": "list_jobs",
+        "description": "列出所有任务",
+        "params": []
+    },
+    {
+        "name": "list_wechat",
+        "description": null,
+        "params": []
+    },
+    {
+        "name": "schedule_a_job",
+        "description": "\n        {\n            \"name\": \"Greet\",\n            \"unit\": \"days\",\n            \"every\": 1,\n            \"at\": \"08:00:00\",\n            \"do\": {\n                \"func\": \"send_text\",\n                \"args\": [12314, \"wxid_foo\", \"Morning!\"]\n            },\n            \"description\": \"\",\n            \"tags\": [\"tian\"]\n        }\n        参见 https://schedule.readthedocs.io/en/stable/examples.html\n        :param name: 任务名\n        :param unit: 单位，seconds, minutes, hours, days, weeks, monday, tuesday, wednesday, thursday, friday, saturday, sunday\n        :param every: 每<unit>\n        :param at:  For daily jobs -> HH:MM:SS or HH:MM\n                    For hourly jobs -> MM:SS or :MM\n                    For minute jobs -> :SS\n        :param do: 执行的方法，func: 方法名, args: 参数列表\n        :param description: 描述\n        :param tags: 标签，总会添加任务名作为标签\n        ",
+        "params": [
+            {
+                "name": "name",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "unit",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "every",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "at",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "do",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "description",
+                "default": null,
+                "required": false
+            },
+            {
+                "name": "tags",
+                "default": null,
+                "required": false
+            }
+        ]
+    },
+    {
+        "name": "search_contact_by_net",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "keyword",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "send_app_msg",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "wxid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "app_id",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "send_article",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "wxid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "title",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "abstract",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "url",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "imgpath",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "send_at_text",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "chatroom_id",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "at_wxids",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "text",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "auto_nickname",
+                "default": true,
+                "required": false
+            }
+        ]
+    },
+    {
+        "name": "send_card",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "wxid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "shared_wxid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "nickname",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "send_file",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "wx_id",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "filepath",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "send_image",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "wx_id",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "img_path",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "send_text",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "wx_id",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "text",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "start_receive_message",
+        "description": "\n        开始接收消息\n        :param port: 端口， port为0则使用COM Event推送\n        ",
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "port",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "start_robot_service",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "start_wechat",
+        "description": null,
+        "params": []
+    },
+    {
+        "name": "stop_receive_message",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "stop_robot_service",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            }
+        ]
+    }
+]

@@ -102,7 +102,7 @@ def show_rpc_docs(json_):
     \b
     whochat show-rpc-docs
     or
-    whochat show-rpc-docs --json > docs.json
+    whochat show-rpc-docs --json > api.json
     """
     import json
 

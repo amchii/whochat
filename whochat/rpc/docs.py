@@ -49,14 +49,14 @@ def pretty_docs():
     docs = make_docs()
     s = ""
     for item in docs:
-        s += f"Name: {item['name']}\n"
+        s += f"Name: `{item['name']}`\n"
         s += f"Description: \n\t{item['description'].lstrip() if item['description'] else '无'}\n"
         s += "Params: \n\t"
         for param in item["params"]:
-            s += f"Name: {param['name']}\n\t"
-            s += f"Required: {str(param['required']).lower()}\n\t"
+            s += f"Name: `{param['name']}`\n\t"
+            s += f"Required: `{str(param['required']).lower()}`\n\t"
             s += (
-                f"Default: {param['default']}\n"
+                f"Default: `{param['default']}`\n"
                 if param["default"] is not None
                 else "\n\t"
             )
