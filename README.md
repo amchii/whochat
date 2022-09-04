@@ -1,4 +1,13 @@
 # WhoChat
+```
+ ___       __   ___  ___  ________  ________  ___  ___  ________  _________
+|\  \     |\  \|\  \|\  \|\   __  \|\   ____\|\  \|\  \|\   __  \|\___   ___\
+\ \  \    \ \  \ \  \\\  \ \  \|\  \ \  \___|\ \  \\\  \ \  \|\  \|___ \  \_|
+ \ \  \  __\ \  \ \   __  \ \  \\\  \ \  \    \ \   __  \ \   __  \   \ \  \
+  \ \  \|\__\_\  \ \  \ \  \ \  \\\  \ \  \____\ \  \ \  \ \  \ \  \   \ \  \
+   \ \____________\ \__\ \__\ \_______\ \_______\ \__\ \__\ \__\ \__\   \ \__\
+    \|____________|\|__|\|__|\|_______|\|_______|\|__|\|__|\|__|\|__|    \|__|
+```
 
 **一个依赖于 [ComWeChatRobot](https://github.com/ljc545w/ComWeChatRobot)提供的Com接口的微信机器人，在此之上提供了:**
 
@@ -114,9 +123,9 @@ PID: 28824
 注册SIGINT信号处理程序: run.<locals>.shutdown
 运行微信机器人RPC websocket服务, 地址为<localhost:9002>
 ```
-默认地址为`localhost:9002`，测试发送消息给文件传输助手，记得先调用`start_robot_service`注入dll
+默认地址为`localhost:9002`，测试发送消息给文件传输助手，~~记得先调用`start_robot_service`注入dll~~，现在调用方法时会自动注入dll
 ![发送消息](https://user-images.githubusercontent.com/26922464/187036614-f1b8589b-ce2b-4c57-bbb0-c167755201a5.png)
-RPC所有方法和参数可通过`whochat show-rpc-docs`命令查看或者`whochat show-rpc-docs --json > docs.json`生成JSON文档:
+RPC所有方法和参数可通过`whochat show-rpc-docs`命令查看或者`whochat show-rpc-docs --json > docs.json`生成JSON文档([rpc-api.json](docs/rpc/api.json)):
 ```
 > whochat show-rpc-docs --help
 Usage: whochat show-rpc-docs [OPTIONS]
