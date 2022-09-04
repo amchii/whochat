@@ -1,3 +1,4 @@
+import functools
 import json
 import os
 import pathlib
@@ -33,6 +34,15 @@ def get_robot_event(com_id) -> RobotEventABC:
     if not hasattr(_robot_local, "robot_event"):
         setattr(_robot_local, "robot_event", com_client.CreateObject(com_id))
     return getattr(_robot_local, "robot_event")
+
+
+def auto_start(func):
+    @functools.wraps(func)
+    def wrapper(self: "WechatBot", *args, **kwargs):
+        self.start_robot_service()
+        return func(self, *args, **kwargs)
+
+    return wrapper
 
 
 class WechatBot:
@@ -79,6 +89,7 @@ class WechatBot:
             self.started = False
         return not result
 
+    @auto_start
     def send_image(self, wx_id, img_path):
         abs_path = pathlib.Path(img_path).absolute()
         # BUG: (20220821)图片文件名如果有多个"."的话不能成功发送, 所以复制到临时文件进行发送
@@ -90,21 +101,26 @@ class WechatBot:
 
         return self.robot.CSendImage(self.wx_pid, wx_id, str(abs_path))
 
+    @auto_start
     def send_text(self, wx_id, text):
         return self.robot.CSendText(self.wx_pid, wx_id, text)
 
+    @auto_start
     def send_file(self, wx_id, filepath):
         abs_path = pathlib.Path(filepath).absolute()
         return self.robot.CSendFile(self.wx_pid, wx_id, str(abs_path))
 
+    @auto_start
     def send_article(
         self, wxid: str, title: str, abstract: str, url: str, imgpath: str
     ):
         return self.robot.CSendArticle(self.wx_pid, wxid, title, abstract, url, imgpath)
 
+    @auto_start
     def send_card(self, wxid: str, shared_wxid: str, nickname: str):
         return self.robot.CSendCard(self.wx_pid, wxid, shared_wxid, nickname)
 
+    @auto_start
     def send_at_text(
         self,
         chatroom_id: str,
@@ -116,6 +132,7 @@ class WechatBot:
             self.wx_pid, chatroom_id, at_wxids, text, auto_nickname
         )
 
+    @auto_start
     def get_friend_list(self):
         return [
             dict(item)
@@ -127,9 +144,11 @@ class WechatBot:
             )
         ]
 
+    @auto_start
     def get_wx_user_info(self, wxid: str):
         return json.loads(self.robot.CGetWxUserInfo(self.wx_pid, wxid))
 
+    @auto_start
     def get_self_info(self, refresh=False):
         if refresh or not self.user_info:
             self.user_info = json.loads(
@@ -139,14 +158,17 @@ class WechatBot:
             )
         return self.user_info
 
+    @auto_start
     def check_friend_status(self, wxid: str):
         return self.robot.CCheckFriendStatus(self.wx_pid, wxid)
 
+    @auto_start
     def get_com_work_path(self):
         return self.robot.CGetComWorkPath(
             self.wx_pid,
         )
 
+    @auto_start
     def start_receive_message(self, port: int):
         """
         开始接收消息
@@ -154,16 +176,19 @@ class WechatBot:
         """
         return self.robot.CStartReceiveMessage(self.wx_pid, port)
 
+    @auto_start
     def stop_receive_message(self):
         return self.robot.CStopReceiveMessage(
             self.wx_pid,
         )
 
+    @auto_start
     def get_chat_room_member_ids(self, chatroom_id: str):
         wx_ids_str: str = self.robot.CGetChatRoomMembers(self.wx_pid, chatroom_id)[1][1]
         wx_ids = wx_ids_str.split("^G")
         return wx_ids
 
+    @auto_start
     def get_chat_room_member_nickname(self, chatroom_id: str, wxid: str):
         return self.robot.CGetChatRoomMemberNickname(self.wx_pid, chatroom_id, wxid)
 
@@ -188,34 +213,43 @@ class WechatBot:
             )
         return results
 
+    @auto_start
     def add_friend_by_wxid(self, wxid: str, message: str):
         return self.robot.CAddFriendByWxid(self.wx_pid, wxid, message)
 
+    @auto_start
     def search_contact_by_net(self, keyword: str):
         return [
             dict(item) for item in self.robot.CSearchContactByNet(self.wx_pid, keyword)
         ]
 
+    @auto_start
     def add_brand_contact(self, public_id: str):
         return self.robot.CAddBrandContact(self.wx_pid, public_id)
 
+    @auto_start
     def change_we_chat_ver(self, version: str):
         return self.robot.CChangeWeChatVer(self.wx_pid, version)
 
+    @auto_start
     def send_app_msg(self, wxid: str, app_id: str):
         return self.robot.CSendAppMsg(self.wx_pid, wxid, app_id)
 
+    @auto_start
     def delete_user(self, wxid: str):
         return self.robot.CDeleteUser(self.wx_pid, wxid)
 
+    @auto_start
     def is_wx_login(self) -> int:
         return self.robot.CIsWxLogin(
             self.wx_pid,
         )
 
+    @auto_start
     def get_db_handles(self):
         return [dict(item) for item in self.robot.CGetDbHandles(self.wx_pid)]
 
+    @auto_start
     def register_event(self, event_sink: RobotEventSinkABC):
         if self.event_connection:
             self.event_connection.__del__()
@@ -224,6 +258,7 @@ class WechatBot:
             self.wx_pid, self.event_connection.cookie
         )
 
+    @auto_start
     def get_we_chat_ver(self) -> str:
         return self.robot.CGetWeChatVer()
 
