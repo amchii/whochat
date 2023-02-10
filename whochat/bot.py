@@ -40,7 +40,10 @@ def auto_start(func):
     @functools.wraps(func)
     def wrapper(self: "WechatBot", *args, **kwargs):
         self.start_robot_service()
-        return func(self, *args, **kwargs)
+        try:
+            return func(self, *args, **kwargs)
+        except Exception as e:
+            logger.exception(e)
 
     return wrapper
 
@@ -261,6 +264,142 @@ class WechatBot:
     @auto_start
     def get_we_chat_ver(self) -> str:
         return self.robot.CGetWeChatVer()
+
+    @auto_start
+    def hook_voice_msg(self, savepath: str) -> int:
+        return self.robot.CHookVoiceMsg(self.wx_pid, savepath)
+
+    @auto_start
+    def unhook_voice_msg(self):
+        return self.robot.CUnHookVoiceMsg(self.wx_pid)
+
+    @auto_start
+    def hook_image_msg(self, savepath: str) -> int:
+        return self.robot.CHookImageMsg(self.wx_pid, savepath)
+
+    @auto_start
+    def unhook_image_msg(self):
+        return self.robot.CUnHookImageMsg(self.wx_pid)
+
+    @auto_start
+    def open_browser(self, url: str):
+        return self.robot.COpenBrowser(self.wx_pid, url)
+
+    @auto_start
+    def get_history_public_msg(self, public_id: str, offset: str = ""):
+        """
+        获取公众号历史消息
+
+        Args:
+            offset (str, optional): 起始偏移，为空的话则从新到久获取十条，该值可从返回数据中取得
+        """
+        r = self.robot.CGetHistoryPublicMsg(self.wx_pid, public_id, offset)
+        try:
+            msgs = json.loads(r[0])
+        except (IndexError, json.JSONDecodeError) as e:
+            logger.exception(e)
+            return []
+        return msgs
+
+    @auto_start
+    def forward_message(self, wxid: str, msgid: int):
+        """
+        转发消息
+
+        Args:
+            wxid (str): 消息接收人
+            msgid (int): 消息id
+        """
+        return self.robot.CForwardMessage(self.wx_pid, wxid, msgid)
+
+    @auto_start
+    def get_qrcode_image(
+        self,
+    ) -> bytes:
+        """
+        获取二维码，同时切换到扫码登陆
+
+        Returns:
+            bytes
+                二维码bytes数据.
+        You can convert it to image object,like this:
+        >>> from io import BytesIO
+        >>> from PIL import Image
+        >>> buf = wx.GetQrcodeImage()
+        >>> image = Image.open(BytesIO(buf)).convert("L")
+        >>> image.save('./qrcode.png')
+        """
+        return self.robot.CGetQrcodeImage(self.wx_pid)
+
+    @auto_start
+    def get_a8_key(self, url: str):
+        """
+        获取A8Key
+
+        Args:
+            url (str): 公众号文章链接
+        """
+        r = self.robot.CGetA8Key(self.wx_pid, url)
+        try:
+            result = json.loads(r[0])
+        except (IndexError, json.JSONDecodeError) as e:
+            logger.exception(e)
+            return ""
+        return result
+
+    @auto_start
+    def send_xml_msg(self, wxid: str, xml: str, img_path: str) -> int:
+        """
+        发送原始xml消息
+
+        Returns:
+            int: 0表示成功
+        """
+        return self.robot.CSendXmlMsg(self.wx_pid, wxid, xml, img_path)
+
+    @auto_start
+    def logout(self) -> int:
+        """
+        登出
+
+        Returns:
+            int: 0表示成功
+        """
+        return self.robot.CLogout(self.wx_pid)
+
+    @auto_start
+    def get_transfer(self, wxid: str, transactionid: str, transferid: int) -> int:
+        """
+        收款
+
+        Args:
+            wxid : str
+                转账人wxid.
+            transcationid : str
+                从转账消息xml中获取.
+            transferid : str
+                从转账消息xml中获取.
+
+        Returns:
+            int
+                成功返回0，失败返回非0值.
+        """
+        return self.robot.CGetTransfer(self.wx_pid, wxid, transactionid, transferid)
+
+    @auto_start
+    def send_emotion(self, wxid: str, img_path: str) -> int:
+        return self.robot.CSendEmotion(self.wx_pid, wxid, img_path)
+
+    @auto_start
+    def get_msg_cdn(self, msgid: int) -> str:
+        """
+        下载图片、视频、文件等
+
+        Returns:
+            str
+                成功返回文件路径，失败返回空字符串.
+        """
+        return self.robot.CGetMsgCDN(self.wx_pid, msgid)
 
 
 class WechatBotFactoryMetaclass(type):

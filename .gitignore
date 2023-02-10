@@ -89,15 +89,16 @@ ENV/
 
 # Instance
 media/
-bmiss/settings/instance*.py
 logs/*
 !logs/.gitkeep
+whochat/ComWeChatRobot/log
 
 # Editors & IDEs
 *.sublime-project
 *.sublime-workspace
 .idea/
 *.swp
+.vscode
 
 # db
 *.sqlite3

@@ -1,6 +1,7 @@
 from typing import Any, List, Sequence, Tuple, Union
 
 DictIterable = Sequence[Tuple[str, Any]]
+JsonStr = str
 
 
 class CWechatRobotABC:
@@ -147,6 +148,102 @@ class CWechatRobotABC:
 
     def CAddChatRoomMember(self, wx_pid: int, chatroomid: str, wxids: List[str]):
         ...
+
+    def COpenBrowser(self, wx_pid: int, url: str):
+        """
+        打开内置浏览器
+        """
+
+    def CGetHistoryPublicMsg(
+        self, wx_pid: int, public_id: str, offset: str = ""
+    ) -> Tuple[JsonStr]:
+        """
+        获取公众号历史消息
+
+        Args:
+            offset (str, optional): 起始偏移，为空的话则从新到久获取十条，该值可从返回数据中取得.
+        """
+
+    def CForwardMessage(self, wx_pid: int, wxid: str, msgid: int):
+        """
+        转发消息
+
+        Args:
+            wxid (str): 消息接收人
+            msgid (int): 消息id
+        """
+
+    def CGetQrcodeImage(self, wx_pid: int) -> bytes:
+        """
+        获取二维码，同时切换到扫码登陆
+
+        Returns:
+            bytes
+                二维码bytes数据.
+        You can convert it to image object,like this:
+        >>> from io import BytesIO
+        >>> from PIL import Image
+        >>> buf = wx.GetQrcodeImage()
+        >>> image = Image.open(BytesIO(buf)).convert("L")
+        >>> image.save('./qrcode.png')
+
+        """
+
+    def CGetA8Key(self, wx_pid: int, url: str) -> Tuple[JsonStr]:
+        """
+        获取A8Key
+
+        Args:
+            url (str): 公众号文章链接
+        """
+
+    def CSendXmlMsg(self, wx_pid: int, wxid: str, xml: str, img_path: str) -> int:
+        """
+        发送原始xml消息
+
+        Returns:
+            int: 0表示成功
+        """
+
+    def CLogout(self, wx_pid: int) -> int:
+        """
+        登出
+
+        Returns:
+            int: 0表示成功
+        """
+
+    def CGetTransfer(
+        self, wx_pid: int, wxid: str, transactionid: str, transferid: int
+    ) -> int:
+        """
+        收款
+
+        Args:
+            wxid : str
+                转账人wxid.
+            transcationid : str
+                从转账消息xml中获取.
+            transferid : str
+                从转账消息xml中获取.
+
+        Returns:
+            int
+                成功返回0，失败返回非0值.
+
+        """
+
+    def CSendEmotion(self, wx_pid: int, wxid: str, img_path: str) -> int:
+        ...
+
+    def CGetMsgCDN(self, wx_pid: int, msgid: int) -> str:
+        """
+        下载图片、视频、文件等
+
+        Returns:
+            str
+                成功返回文件路径，失败返回空字符串.
+        """
 
 
 class RobotEventSinkABC:
