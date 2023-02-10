@@ -2,12 +2,14 @@ import functools
 import json
 import os
 import pathlib
+import re
 import shutil
 import tempfile
 import threading
 import time
 from datetime import datetime
 from typing import Dict, List, Union
+from urllib import request
 
 import psutil
 
@@ -572,3 +574,24 @@ class WechatBotFactory(metaclass=WechatBotFactoryMetaclass):
     @classmethod
     def get_current_dir(cls):
         return os.getcwd()
+
+    @classmethod
+    def get_latest_wechat_version(cls):
+        logger.info("获取微信最新版本号...")
+        with request.urlopen(
+            request.Request(
+                "https://pc.weixin.qq.com/?lang=zh_CN",
+                headers={
+                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36"
+                },
+                method="GET",
+            )
+        ) as fp:
+            html = fp.read().decode()
+        m = re.search(r"download-version\">(.*?)</span>", html)
+        if not m:
+            logger.warning("获取微信最新版本号异常")
+            return
+        version = m.group(1)
+        logger.info(f"微信最新版本号：{version}")
+        return version
