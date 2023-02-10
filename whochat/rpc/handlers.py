@@ -6,10 +6,10 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, Dict, List
 
-import comtypes
 import schedule
 from jsonrpcserver import InvalidParams, Success, methods
 
+from whochat import _comtypes as comtypes
 from whochat.bot import WechatBot, WechatBotFactory
 from whochat.signals import Signal
 
