@@ -8,17 +8,12 @@ import threading
 from datetime import datetime
 from typing import Dict, List, Union
 
-from .utils import guess_wechat_user_by_paths
-
-try:
-    import comtypes.client as com_client
-except ImportError:
-    com_client = None
-
 import psutil
 
+from ._comtypes import client as com_client
 from .abc import CWechatRobotABC, RobotEventABC, RobotEventSinkABC
 from .logger import logger
+from .utils import guess_wechat_user_by_paths
 
 _robot_local = threading.local()
 

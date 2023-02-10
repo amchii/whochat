@@ -3,7 +3,13 @@ import random
 import re
 import socket
 import string
+import sys
 from typing import List, Optional
+
+
+def windows_only():
+    if sys.platform != "win32":
+        raise RuntimeError("仅支持在win32环境下使用")
 
 
 def get_free_port():

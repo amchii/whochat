@@ -5,10 +5,9 @@ from collections import deque
 from functools import partial
 from typing import List
 
-import comtypes
-import comtypes.client
 import websockets
 
+from whochat import _comtypes as comtypes
 from whochat.abc import RobotEventSinkABC
 from whochat.bot import WechatBotFactory
 from whochat.logger import logger

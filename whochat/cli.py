@@ -4,6 +4,7 @@ import os
 import click
 
 from whochat.rpc.handlers import register_rpc_methods
+from whochat.utils import windows_only
 
 
 @click.group(
@@ -44,6 +45,7 @@ def version():
 @click.option("--unreg", "-R", is_flag=True, default=False, help="取消注册")
 def regserver(unreg):
     """注册COM"""
+    windows_only()
     from whochat.ComWeChatRobot import register, unregister
 
     if unreg:
@@ -55,6 +57,8 @@ def regserver(unreg):
 @whochat.command()
 def list_wechat():
     """列出当前运行的微信进程"""
+    windows_only()
+
     from whochat.bot import WechatBotFactory
 
     s = ""
@@ -79,6 +83,8 @@ def serve_message_ws(host, port, wx_pids):
 
     WX_PIDS: 微信进程PID
     """
+    windows_only()
+
     import asyncio
 
     from whochat.messages.websocket import WechatWebsocketServer
@@ -123,6 +129,8 @@ def serve_rpc_ws(host, port):
     """
     运行微信机器人RPC服务(JSON-RPC2.0), 使用Websocket
     """
+    windows_only()
+
     import asyncio
 
     from whochat.rpc.servers.websocket import run
@@ -144,6 +152,8 @@ def serve_rpc_http(host, port):
 
     需要安装fastapi和uvicorn: `pip install fastapi uvicorn`
     """
+    windows_only()
+
     import uvicorn
 
     from whochat.rpc.servers.http import app
