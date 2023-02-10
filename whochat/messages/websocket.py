@@ -1,5 +1,4 @@
 import asyncio
-import base64
 import json
 import re
 from collections import deque
@@ -23,18 +22,19 @@ class MessageEventStoreSink(RobotEventSinkABC):
 
     @staticmethod
     def _parse_extrainfo(extrainfo):
-        extrainfo = base64.b64decode(extrainfo)
         extra = {"is_at_msg": False}
-        m = re.search(rb"<atuserlist><!\[CDATA\[(.*?)\]\]></atuserlist>", extrainfo)
+        m = re.search(r"<atuserlist><!\[CDATA\[(.*?)\]\]></atuserlist>", extrainfo)
         if m:
             extra["is_at_msg"] = True
-            extra["at_user_list"] = m.group(1).decode().split(",")
-        m = re.search(rb"<membercount>(\d+)</membercount>", extrainfo)
+            extra["at_user_list"] = m.group(1).split(",")
+        m = re.search(r"<membercount>(\d+)</membercount>", extrainfo)
         if m:
             extra["member_count"] = int(m.group(1))
         return extra
 
     def OnGetMessageEvent(self, msg):
+        if isinstance(msg, (list, tuple)):
+            msg = msg[0]
         try:
             data = json.loads(msg)
             if "@chatroom" not in data["sender"]:
