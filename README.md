@@ -174,6 +174,9 @@ Options:
 [CHANGELOG](https://github.com/amchii/whochat/blob/main/CHANGELOG.md)
 
 [Tags](https://github.com/amchii/whochat/tags)
+## v1.2.0
+* 更新适配[Robot DLL](f6d7577)
+* 添加`_comtypes.py`方便在非Windows平台开发
 
 ## v.1.1.0
 
@@ -187,4 +190,4 @@ Options:
 
 * 添加Python版本依赖说明
 
-## 欢迎学习交流
+## 欢迎学习交流，点个star⭐️
