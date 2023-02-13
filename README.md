@@ -174,7 +174,7 @@ Options:
 [CHANGELOG](https://github.com/amchii/whochat/blob/main/CHANGELOG.md)
 
 [Tags](https://github.com/amchii/whochat/tags)
-## v1.2.0
+## v1.2.1
 * 更新适配 [Robot DLL](https://github.com/amchii/ComWeChatRobot/commit/f6d75778d22b590a4775e49b72cb9c19037d2671)
 * 添加`_comtypes.py`方便在非Windows平台开发
 
