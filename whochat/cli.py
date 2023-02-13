@@ -33,11 +33,12 @@ def whochat(log_level: str):
 def version():
     """显示程序和支持微信的版本信息"""
     from whochat import __version__
-    from whochat.ComWeChatRobot import __wechat_version__
+    from whochat.ComWeChatRobot import __robot_commit_hash__, __wechat_version__
 
     s = ""
     s += f"WhoChat version: {__version__}\n"
     s += f"Supported WeChat version: {__wechat_version__}\n"
+    s += f"Build ComWechatRobot's dll from: {__robot_commit_hash__}"
     click.echo(s)
 
 
