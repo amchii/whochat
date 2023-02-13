@@ -64,6 +64,43 @@
         ]
     },
     {
+        "name": "forward_message",
+        "description": "\n        转发消息\n\n        Args:\n            wxid (str): 消息接收人\n            msgid (int): 消息id\n        ",
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "wxid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "msgid",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "get_a8_key",
+        "description": "\n        获取A8Key\n\n        Args:\n            url (str): 公众号文章链接\n        ",
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "url",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
         "name": "get_chat_room_member_ids",
         "description": null,
         "params": [
@@ -139,6 +176,54 @@
         ]
     },
     {
+        "name": "get_history_public_msg",
+        "description": "\n        获取公众号历史消息\n\n        Args:\n            offset (str, optional): 起始偏移，为空的话则从新到久获取十条，该值可从返回数据中取得\n        ",
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "public_id",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "offset",
+                "default": "",
+                "required": false
+            }
+        ]
+    },
+    {
+        "name": "get_msg_cdn",
+        "description": "\n        下载图片、视频、文件等\n\n        Returns:\n            str\n                成功返回文件路径，失败返回空字符串.\n        ",
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "msgid",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "get_qrcode_image",
+        "description": "\n        获取二维码，同时切换到扫码登陆\n\n        Returns:\n            bytes\n                二维码bytes数据.\n        You can convert it to image object,like this:\n        >>> from io import BytesIO\n        >>> from PIL import Image\n        >>> buf = wx.GetQrcodeImage()\n        >>> image = Image.open(BytesIO(buf)).convert(\"L\")\n        >>> image.save('./qrcode.png')\n        ",
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
         "name": "get_robot_pid",
         "description": null,
         "params": []
@@ -160,6 +245,32 @@
         ]
     },
     {
+        "name": "get_transfer",
+        "description": "\n        收款\n\n        Args:\n            wxid : str\n                转账人wxid.\n            transcationid : str\n                从转账消息xml中获取.\n            transferid : str\n                从转账消息xml中获取.\n\n        Returns:\n            int\n                成功返回0，失败返回非0值.\n        ",
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "wxid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "transactionid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "transferid",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
         "name": "get_we_chat_ver",
         "description": null,
         "params": []
@@ -175,6 +286,38 @@
             },
             {
                 "name": "wxid",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "hook_image_msg",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "savepath",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "hook_voice_msg",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "savepath",
                 "default": null,
                 "required": true
             }
@@ -205,6 +348,33 @@
         "name": "list_wechat",
         "description": null,
         "params": []
+    },
+    {
+        "name": "logout",
+        "description": "\n        登出\n\n        Returns:\n            int: 0表示成功\n        ",
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "open_browser",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "url",
+                "default": null,
+                "required": true
+            }
+        ]
     },
     {
         "name": "schedule_a_job",
@@ -378,6 +548,27 @@
         ]
     },
     {
+        "name": "send_emotion",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "wxid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "img_path",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
         "name": "send_file",
         "description": null,
         "params": [
@@ -441,6 +632,32 @@
         ]
     },
     {
+        "name": "send_xml_msg",
+        "description": "\n        发送原始xml消息\n\n        Returns:\n            int: 0表示成功\n        ",
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "wxid",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "xml",
+                "default": null,
+                "required": true
+            },
+            {
+                "name": "img_path",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
         "name": "start_receive_message",
         "description": "\n        开始接收消息\n        :param port: 端口， port为0则使用COM Event推送\n        ",
         "params": [
@@ -485,6 +702,28 @@
     },
     {
         "name": "stop_robot_service",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "unhook_image_msg",
+        "description": null,
+        "params": [
+            {
+                "name": "wx_pid",
+                "default": null,
+                "required": true
+            }
+        ]
+    },
+    {
+        "name": "unhook_voice_msg",
         "description": null,
         "params": [
             {
