@@ -10,8 +10,11 @@
 ```
 
 [Tags](https://github.com/amchii/whochat/tags)
+## v1.2.0
+* 更新适配[Robot DLL](f6d7577)
+* 添加`_comtypes.py`方便在非Windows平台开发
 
-## v.1.1.0
+## v1.1.0
 
 * 更新 [Robot DLL](https://github.com/ljc545w/ComWeChatRobot/commit/ff76f80ce2f3d979bf968d07f530701d834dc988)
 * 接收消息增加`extrainfo`字段，当消息为群消息时可获取群成员数量和被@的人的微信ID
