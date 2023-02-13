@@ -1,3 +1,7 @@
+"""
+https://github.com/ljc545w/ComWeChatRobot/releases
+https://github.com/amchii/ComWeChatRobot/releases
+"""
 import os.path
 
 from whochat.utils import as_admin
@@ -7,6 +11,7 @@ CWeChatRobotEXE_PATH = os.path.abspath(
 )
 
 __wechat_version__ = "3.7.0.30"
+__robot_commit_hash__ = "f6d7577"
 
 
 def register():
