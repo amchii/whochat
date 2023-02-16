@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import re
 from collections import deque
 from functools import partial
@@ -10,9 +11,10 @@ import websockets
 from whochat import _comtypes as comtypes
 from whochat.abc import RobotEventSinkABC
 from whochat.bot import WechatBotFactory
-from whochat.logger import logger
 from whochat.signals import Signal
 from whochat.utils import EventWaiter
+
+logger = logging.getLogger("whochat")
 
 
 class MessageEventStoreSink(RobotEventSinkABC):
@@ -74,10 +76,12 @@ class WechatWebsocketServer:
 
     async def handler(self, websocket):
         if websocket not in self.clients:
+            logger.info(f"Accept connection from {websocket.remote_address}")
             self.clients.add(websocket)
             await websocket.send("hello")
             await websocket.wait_closed()
             self.clients.remove(websocket)
+            logger.info(f"Connection from {websocket.remote_address} was closed")
 
     async def serve_websocket(self):
         async with websockets.serve(

@@ -3,6 +3,7 @@ import logging
 
 import websockets
 from jsonrpcserver import async_dispatch
+from websockets.legacy.server import WebSocketServerProtocol
 
 from whochat.signals import Signal
 
@@ -14,10 +15,13 @@ async def dispatch_in_task(websocket, request):
     await websocket.send(res)
 
 
-async def handler(websocket):
-    while True:
+async def handler(websocket: WebSocketServerProtocol):
+    logger.info(f"Accept connection from {websocket.remote_address}")
+    while not websocket.closed:
         request = await websocket.recv()
         asyncio.create_task(dispatch_in_task(websocket, request))
+
+    logger.info(f"Connection from {websocket.remote_address} was closed")
 
 
 async def run(host, port):

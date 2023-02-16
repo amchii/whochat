@@ -1,9 +1,7 @@
 import inspect
 from collections import OrderedDict
 
-from jsonrpcserver import methods
-
-from whochat.rpc.handlers import register_rpc_methods
+from whochat.rpc.handlers import make_rpc_methods
 
 _docs = []
 
@@ -11,13 +9,10 @@ _docs = []
 def make_docs():
     if _docs:
         return _docs
-    register_rpc_methods()
+    rpc_methods = make_rpc_methods()
 
     for name, rpc_method in OrderedDict(
-        {
-            key: methods.global_methods[key]
-            for key in sorted(methods.global_methods.keys())
-        }
+        {key: rpc_methods[key] for key in sorted(rpc_methods.keys())}
     ).items():
         s = inspect.signature(rpc_method)
         description = rpc_method.__doc__
