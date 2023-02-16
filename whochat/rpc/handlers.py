@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, Dict, List
 
 import schedule
-from jsonrpcserver import InvalidParams, Success, methods
+from jsonrpcserver import InvalidParams, Success
 
 from whochat import _comtypes as comtypes
 from whochat.bot import WechatBot, WechatBotFactory
@@ -305,7 +305,13 @@ class BotScheduler:
 default_bot_scheduler = BotScheduler()
 
 
-def register_rpc_methods():
+def make_rpc_methods():
     rpc_methods = BotRpcHelper.make_async_rpc_methods()
-    methods.global_methods.update(rpc_methods)
-    methods.global_methods.update(default_bot_scheduler.get_rpc_methods())
+    rpc_methods.update(default_bot_scheduler.get_rpc_methods())
+    return rpc_methods
+
+
+def register_rpc_methods():
+    from jsonrpcserver.methods import global_methods
+
+    global_methods.update(make_rpc_methods())
