@@ -29,15 +29,26 @@ class BotWebsocketRPCClient:
         self.send_queue: asyncio.Queue[Dict[str, Any]] = asyncio.Queue(maxsize=1)
         self._rpc_methods = make_rpc_methods()
         self._results = defaultdict(lambda: unset)
+        self._current_request_id = None
+
+    async def start_result_cleaner(self):
+        logger.info("Starting result cleaner")
+        while removable := len(self._results) - 100 > 0:
+            logger.info(
+                f"Current size of results: {len(self._results)}, will remove {removable} items"
+            )
+            for k in list(self._results.keys())[:removable]:
+                self._results.pop(k, None)
+            await asyncio.sleep(1)
 
     async def start_sender(self, websocket: WebSocketClientProtocol):
-        while True:
+        while not websocket.closed:
             request_dict = await self.send_queue.get()
             logger.info(f"SEND: {request_dict}")
             await websocket.send(json.dumps(request_dict))
 
     async def start_receiver(self, websocket: WebSocketClientProtocol):
-        while True:
+        while not websocket.closed:
             response = await websocket.recv()
             logger.info(f"RECV: {response}")
             try:
@@ -50,22 +61,30 @@ class BotWebsocketRPCClient:
                 pass
 
     async def start_consumer(self):
+        logger.info("Starting rpc client consumer")
         async for websocket in websockets.connect(self.ws_uri):
             websocket: WebSocketClientProtocol
+            logger.info(f"Websocket client bind on {websocket.local_address}")
             try:
                 await asyncio.gather(
-                    self.start_receiver(websocket), self.start_sender(websocket)
+                    self.start_receiver(websocket),
+                    self.start_sender(websocket),
                 )
             except websockets.ConnectionClosed:
-                pass
+                logger.warning(
+                    f"Websocket{websocket.local_address} closed",
+                )
+
+    def consume_in_background(self):
+        asyncio.create_task(self.start_consumer())
+        asyncio.create_task(self.start_result_cleaner())
 
     async def rpc_call(self, name: str, params, timeout):
         request = req(name, params)
         request_id = request["id"]
-
+        self._current_request_id = request_id
         await self.send_queue.put(request)
         if timeout < 0:
-            self._results.pop(request_id, None)
             return request_id
         elif timeout == 0:
             while True:
