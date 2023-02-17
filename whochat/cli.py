@@ -77,8 +77,15 @@ def list_wechat():
     "--host", "-h", default="localhost", show_default=True, help="Server host."
 )
 @click.option("--port", "-p", default=9001, show_default=True, help="Server port")
+@click.option(
+    "--welcome",
+    default=True,
+    type=bool,
+    show_default=True,
+    help="Respond 'hello' on client connect",
+)
 @click.argument("wx_pids", nargs=-1, type=int)
-def serve_message_ws(host, port, wx_pids):
+def serve_message_ws(host, port, welcome, wx_pids):
     """
     运行接收微信消息的Websocket服务
 
@@ -95,7 +102,7 @@ def serve_message_ws(host, port, wx_pids):
 
     async def main():
         server = WechatMessageWebsocketServer(
-            wx_pids=wx_pids, ws_host=host, ws_port=port
+            wx_pids=wx_pids, ws_host=host, ws_port=port, welcome=welcome
         )
         await server.serve()
 
