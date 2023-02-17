@@ -2,11 +2,14 @@ import asyncio
 import json
 import logging
 import re
+import warnings
 from collections import deque
 from functools import partial
-from typing import List
+from typing import Awaitable, Callable, List
 
 import websockets
+from websockets.legacy.client import WebSocketClientProtocol
+from websockets.typing import Data
 
 from whochat import _comtypes as comtypes
 from whochat.abc import RobotEventSinkABC
@@ -50,13 +53,14 @@ class MessageEventStoreSink(RobotEventSinkABC):
         self.deque_.append(data)
 
 
-class WechatWebsocketServer:
+class WechatMessageWebsocketServer:
     def __init__(
         self,
         wx_pids: List[int],
         ws_host: str = None,
         ws_port: int = 9001,
         queue: asyncio.Queue = None,
+        welcome: bool = True,
         **kwargs,
     ):
         self.wx_pids = wx_pids
@@ -64,6 +68,7 @@ class WechatWebsocketServer:
         self.ws_port = ws_port
         self.extra_kwargs = kwargs
         self.queue = queue or asyncio.Queue(maxsize=10)
+        self.welcome = welcome
 
         self.ws_server = None
         self.clients = set()
@@ -78,7 +83,8 @@ class WechatWebsocketServer:
         if websocket not in self.clients:
             logger.info(f"Accept connection from {websocket.remote_address}")
             self.clients.add(websocket)
-            await websocket.send("hello")
+            if self.welcome:
+                await websocket.send("hello")
             await websocket.wait_closed()
             self.clients.remove(websocket)
             logger.info(f"Connection from {websocket.remote_address} was closed")
@@ -169,3 +175,28 @@ class WechatWebsocketServer:
         self.stop_receive_msg()
         await receive_msg_task
         await broadcast_task
+
+
+class WechatWebsocketServer(WechatMessageWebsocketServer):
+    def __init__(self, *args, **kwargs):
+        warnings.warn(" 'WechatWebsocketServer' 已更名为 'WechatMessageWebsocketServer'")
+        super().__init__(*args, **kwargs)
+
+
+class WechatMessageWebsocketClient:
+    def __init__(
+        self,
+        ws_uri: str,
+    ):
+        self.ws_uri = ws_uri
+
+    async def start_consumer(self, on_message: Callable[[Data], Awaitable]):
+        logger.info("Starting message consumer...")
+        async for websocket in websockets.connect(self.ws_uri):
+            websocket: WebSocketClientProtocol
+            logger.info(f"Websocket client bind on {websocket.local_address}")
+            try:
+                async for message in websocket:
+                    await on_message(message)
+            except websockets.ConnectionClosed:
+                continue

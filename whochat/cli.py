@@ -88,13 +88,15 @@ def serve_message_ws(host, port, wx_pids):
 
     import asyncio
 
-    from whochat.messages.websocket import WechatWebsocketServer
+    from whochat.messages.websocket import WechatMessageWebsocketServer
 
     if not wx_pids:
         raise click.BadArgumentUsage("请指定至少一个微信进程PID")
 
     async def main():
-        server = WechatWebsocketServer(wx_pids=wx_pids, ws_host=host, ws_port=port)
+        server = WechatMessageWebsocketServer(
+            wx_pids=wx_pids, ws_host=host, ws_port=port
+        )
         await server.serve()
 
     asyncio.run(main())
