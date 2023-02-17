@@ -455,7 +455,9 @@ class WechatBotFactory(metaclass=WechatBotFactoryMetaclass):
                 results.append(
                     {
                         "pid": process.pid,
-                        "started": datetime.fromtimestamp(process.create_time()),
+                        "started": datetime.fromtimestamp(
+                            process.create_time()
+                        ).isoformat(),
                         "status": process.status(),
                         "wechat_user": guess_wechat_user_by_paths(files),
                     }
