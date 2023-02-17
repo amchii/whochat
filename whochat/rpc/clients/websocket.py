@@ -48,17 +48,16 @@ class BotWebsocketRPCClient:
             await websocket.send(json.dumps(request_dict))
 
     async def start_receiver(self, websocket: WebSocketClientProtocol):
-        while not websocket.closed:
-            response = await websocket.recv()
-            logger.info(f"RECV: {response}")
+        async for message in websocket:
+            logger.info(f"RECV: {message}")
             try:
-                response_dict = json.loads(response)
+                response_dict = json.loads(message)
                 if "result" in response_dict:
                     self._results[response_dict["id"]] = response_dict["result"]
                 elif "error" in response_dict:
                     logger.error(response_dict["error"])
             except json.JSONDecodeError:
-                pass
+                continue
 
     async def start_consumer(self):
         logger.info("Starting rpc client consumer")
