@@ -69,6 +69,7 @@ class BotRpcHelper:
             WechatBotFactory.get_we_chat_ver,
             WechatBotFactory.get_robot_pid,
             WechatBotFactory.kill_robot,
+            WechatBotFactory.get_current_dir,
         ]
     }
     rpc_methods = {}

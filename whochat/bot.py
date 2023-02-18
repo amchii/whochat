@@ -261,16 +261,24 @@ class WechatBot:
         return self.robot.CGetWeChatVer()
 
     @auto_start
-    def hook_voice_msg(self, savepath: str) -> int:
-        return self.robot.CHookVoiceMsg(self.wx_pid, savepath)
+    def hook_voice_msg(self, savepath: str) -> Union[int, str]:
+        p = pathlib.Path(savepath)
+        if not p.is_absolute():
+            p = pathlib.Path.home().joinpath(p)
+        result = self.robot.CHookVoiceMsg(self.wx_pid, str(p))
+        return str(p) if result == 0 else result
 
     @auto_start
     def unhook_voice_msg(self):
         return self.robot.CUnHookVoiceMsg(self.wx_pid)
 
     @auto_start
-    def hook_image_msg(self, savepath: str) -> int:
-        return self.robot.CHookImageMsg(self.wx_pid, savepath)
+    def hook_image_msg(self, savepath: str) -> Union[int, str]:
+        p = pathlib.Path(savepath)
+        if not p.is_absolute():
+            p = pathlib.Path.home().joinpath(p)
+        result = self.robot.CHookImageMsg(self.wx_pid, str(p))
+        return str(p) if result == 0 else result
 
     @auto_start
     def unhook_image_msg(self):
@@ -483,3 +491,7 @@ class WechatBotFactory(metaclass=WechatBotFactoryMetaclass):
         connection = com_client.GetEvents(cls.robot_event, event_sink)
         for wx_pid in wx_pids:
             cls.robot_event.CRegisterWxPidWithCookie(wx_pid, connection.cookie)
+
+    @classmethod
+    def get_current_dir(cls):
+        return os.getcwd()
