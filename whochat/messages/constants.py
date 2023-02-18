@@ -18,4 +18,4 @@ class WechatMsgType(enum.IntEnum):
     小视频 = 62
     SYS_NOTICE = 9999
     系统消息_红包 = 10000
-    撤回消息 = 10002
+    撤回_群语音邀请 = 10002
