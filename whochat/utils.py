@@ -48,6 +48,24 @@ def guess_wechat_user_by_paths(paths: List[str]) -> Optional[str]:
     return ""
 
 
+def guess_wechat_base_directory_by_path(path: str) -> Optional[str]:
+    """
+    :param path: e.g. "C:\\Users\\foo\\Documents\\WeChat Files\\<wxid>\\Msg\\Sns.db"
+    """
+    m = re.match(r"(.*?)\\WeChat Files.*", path, flags=re.I)
+    if not m:
+        return ""
+    return m.group(1)
+
+
+def guess_wechat_base_directory(paths: List[str]) -> Optional[str]:
+    for path in paths:
+        directory = guess_wechat_base_directory_by_path(path)
+        if directory:
+            return directory
+    return ""
+
+
 _handles_type = ctypes.c_void_p * 1
 RPC_S_CALLPENDING = -2147417835
 
