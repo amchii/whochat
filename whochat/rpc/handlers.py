@@ -64,6 +64,8 @@ class BotRpcHelper:
             WechatBot.get_transfer,
             WechatBot.send_emotion,
             WechatBot.get_msg_cdn,
+            WechatBot.get_base_directory,
+            WechatBot.prevent_revoke,
             WechatBotFactory.list_wechat,
             WechatBotFactory.start_wechat,
             WechatBotFactory.get_we_chat_ver,

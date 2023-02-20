@@ -5,6 +5,7 @@ import pathlib
 import shutil
 import tempfile
 import threading
+import time
 from datetime import datetime
 from typing import Dict, List, Union
 
@@ -13,7 +14,7 @@ import psutil
 from ._comtypes import client as com_client
 from .abc import CWechatRobotABC, RobotEventABC, RobotEventSinkABC
 from .logger import logger
-from .utils import guess_wechat_user_by_paths
+from .utils import guess_wechat_base_directory, guess_wechat_user_by_paths
 
 _robot_local = threading.local()
 
@@ -86,6 +87,14 @@ class WechatBot:
         if result == 0:
             self.started = False
         return not result
+
+    @property
+    def base_directory(self):
+        p = psutil.Process(pid=self.wx_pid)
+        return guess_wechat_base_directory([f.path for f in p.open_files()])
+
+    def get_base_directory(self):
+        return self.base_directory
 
     @auto_start
     def send_image(self, wx_id, img_path):
@@ -404,6 +413,32 @@ class WechatBot:
         """
         return self.robot.CGetMsgCDN(self.wx_pid, msgid)
 
+    def prevent_revoke(self, rel_path: str, hold_time: int = 120):
+        """
+        防止文件被删除
+        通过打开文件来阻止微信将撤回的文件删除，仅Windows可用
+
+        :param rel_path: 相对微信数据目录的路径，如微信目录为"C:\\Users\\foo\\Documents\\WeChat Files"，
+                         `rel_path`为"foo.txt", 则实际文件路径为"C:\\Users\\foo\\Documents\\WeChat Files\\foo.txt"
+        :param hold_time: 持续时间，秒，默认为微信撤回时间
+        """
+        full_path = os.path.join(self.base_directory, rel_path)
+        if not os.path.isfile(full_path):
+            logger.error(f"'{full_path}' is not a file")
+            return 1
+
+        def hold():
+            start = time.perf_counter()
+            with open(full_path, "rb"):
+                while not time.perf_counter() > start + hold_time:
+                    time.sleep(1)
+
+        t = threading.Thread(
+            target=hold,
+        )
+        t.start()
+        return 0
+
 
 class WechatBotFactoryMetaclass(type):
     _robot: CWechatRobotABC
@@ -468,6 +503,7 @@ class WechatBotFactory(metaclass=WechatBotFactoryMetaclass):
                         ).isoformat(),
                         "status": process.status(),
                         "wechat_user": guess_wechat_user_by_paths(files),
+                        "base_directory": guess_wechat_base_directory(files),
                     }
                 )
         return results
