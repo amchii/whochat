@@ -424,14 +424,16 @@ class WechatBot:
         """
         full_path = os.path.join(self.base_directory, rel_path)
         if not os.path.isfile(full_path):
-            logger.error(f"'{full_path}' is not a file")
+            logger.error(f"'{full_path}' is not a file.")
             return 1
 
         def hold():
             start = time.perf_counter()
+            logger.info(f"Try to open file {full_path} to prevent the deletion.")
             with open(full_path, "rb"):
                 while not time.perf_counter() > start + hold_time:
                     time.sleep(1)
+            logger.info(f"Opened file {full_path} closed.")
 
         t = threading.Thread(
             target=hold,

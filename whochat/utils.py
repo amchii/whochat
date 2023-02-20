@@ -52,7 +52,7 @@ def guess_wechat_base_directory_by_path(path: str) -> Optional[str]:
     """
     :param path: e.g. "C:\\Users\\foo\\Documents\\WeChat Files\\<wxid>\\Msg\\Sns.db"
     """
-    m = re.match(r"(.*?)\\WeChat Files.*", path, flags=re.I)
+    m = re.match(r"(.*?\\WeChat Files).*", path, flags=re.I)
     if not m:
         return ""
     return m.group(1)
