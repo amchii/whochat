@@ -53,6 +53,10 @@ class WechatBot:
         self.user_info = {}
         self.event_connection = None
 
+        self._base_directory = None
+        self.image_hook_path = None
+        self.voice_hook_path = None
+
     @property
     def robot(self):
         return get_robot_object(self._robot_object_id)
@@ -90,23 +94,31 @@ class WechatBot:
 
     @property
     def base_directory(self):
-        p = psutil.Process(pid=self.wx_pid)
-        return guess_wechat_base_directory([f.path for f in p.open_files()])
+        if not self._base_directory:
+            return self.get_base_directory()
+        return self._base_directory
 
     def get_base_directory(self):
-        return self.base_directory
+        p = psutil.Process(pid=self.wx_pid)
+        base_directory = guess_wechat_base_directory([f.path for f in p.open_files()])
+        self._base_directory = base_directory
+        return base_directory
 
     @auto_start
     def send_image(self, wx_id, img_path):
-        abs_path = pathlib.Path(img_path).absolute()
+        path = pathlib.Path(img_path)
+        if not path.is_absolute():
+            base_dir = self.image_hook_path or self.base_directory
+            path = pathlib.Path(base_dir).joinpath(path)
+
         # BUG: (20220821)图片文件名如果有多个"."的话不能成功发送, 所以复制到临时文件进行发送
-        if "." in abs_path.stem:
+        if "." in path.stem:
             with tempfile.TemporaryDirectory() as td:
-                temp_path = os.path.join(td, os.urandom(5).hex() + abs_path.suffix)
-                shutil.copy(abs_path, temp_path)
+                temp_path = os.path.join(td, os.urandom(5).hex() + path.suffix)
+                shutil.copy(path, temp_path)
                 return self.robot.CSendImage(self.wx_pid, wx_id, temp_path)
 
-        return self.robot.CSendImage(self.wx_pid, wx_id, str(abs_path))
+        return self.robot.CSendImage(self.wx_pid, wx_id, str(path))
 
     @auto_start
     def send_text(self, wx_id, text):
@@ -114,8 +126,11 @@ class WechatBot:
 
     @auto_start
     def send_file(self, wx_id, filepath):
-        abs_path = pathlib.Path(filepath).absolute()
-        return self.robot.CSendFile(self.wx_pid, wx_id, str(abs_path))
+        path = pathlib.Path(filepath)
+        if not path.is_absolute():
+            path = pathlib.Path(self.base_directory).joinpath(path)
+
+        return self.robot.CSendFile(self.wx_pid, wx_id, str(path))
 
     @auto_start
     def send_article(
@@ -154,6 +169,10 @@ class WechatBot:
     @auto_start
     def get_wx_user_info(self, wxid: str):
         return json.loads(self.robot.CGetWxUserInfo(self.wx_pid, wxid))
+
+    @property
+    def wxid(self):
+        return self.get_self_info()["wxId"]
 
     @auto_start
     def get_self_info(self, refresh=False):
@@ -275,7 +294,10 @@ class WechatBot:
         if not p.is_absolute():
             p = pathlib.Path.home().joinpath(p)
         result = self.robot.CHookVoiceMsg(self.wx_pid, str(p))
-        return str(p) if result == 0 else result
+        if result == 0:
+            self.voice_hook_path = str(p)
+            return self.voice_hook_path
+        return result
 
     @auto_start
     def unhook_voice_msg(self):
@@ -287,7 +309,10 @@ class WechatBot:
         if not p.is_absolute():
             p = pathlib.Path.home().joinpath(p)
         result = self.robot.CHookImageMsg(self.wx_pid, str(p))
-        return str(p) if result == 0 else result
+        if result == 0:
+            self.image_hook_path = str(p)
+            return self.image_hook_path
+        return result
 
     @auto_start
     def unhook_image_msg(self):
@@ -423,12 +448,22 @@ class WechatBot:
         :param hold_time: 持续时间，秒，默认为微信撤回时间
         """
         full_path = os.path.join(self.base_directory, rel_path)
+        start = time.perf_counter()
         if not os.path.isfile(full_path):
-            logger.error(f"'{full_path}' is not a file.")
-            return 1
+            tmp_file_path = full_path + ".wxtmp"
+            if not os.path.exists(tmp_file_path):
+                logger.error(
+                    f"'{full_path}' is not a file and it's tmp file {tmp_file_path} not exists"
+                )
+                return 1
+
+            while not os.path.isfile(full_path):
+                time.sleep(0.1)
+                if time.perf_counter() > start + hold_time:
+                    logger.warning("File has been revoked")
+                    return 1
 
         def hold():
-            start = time.perf_counter()
             logger.info(f"Try to open file {full_path} to prevent the deletion.")
             with open(full_path, "rb"):
                 while not time.perf_counter() > start + hold_time:
