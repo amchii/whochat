@@ -65,7 +65,7 @@ def list_wechat():
     s = ""
     for r in WechatBotFactory.list_wechat():
         s += f"PID: {r['pid']}" + "\n"
-        s += f"启动时间: {r['started'].isoformat()}" + "\n"
+        s += f"启动时间: {r['started']}" + "\n"
         s += f"运行状态: {r['status']}" + "\n"
         s += f"用户名: {r['wechat_user']}" + "\n"
         s += "---\n"
