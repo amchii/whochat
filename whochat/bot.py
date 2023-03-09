@@ -174,6 +174,10 @@ class WechatBot:
     def wxid(self):
         return self.get_self_info()["wxId"]
 
+    @property
+    def self_path(self):
+        return os.path.join(self.base_directory, str(self.wx_pid))
+
     @auto_start
     def get_self_info(self, refresh=False):
         if refresh or not self.user_info:
