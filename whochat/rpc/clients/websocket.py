@@ -7,8 +7,8 @@ from functools import partial
 from typing import Any, Dict
 
 import websockets
+import websockets.client
 from jsonrpcclient import request as req
-from websockets.legacy.client import WebSocketClientProtocol
 
 from whochat.rpc.handlers import make_rpc_methods
 
@@ -41,15 +41,19 @@ class BotWebsocketRPCClient:
                 self._results.pop(k, None)
             await asyncio.sleep(1)
 
-    async def start_sender(self, websocket: WebSocketClientProtocol):
+    async def start_sender(
+        self, websocket: "websockets.client.WebSocketClientProtocol"
+    ):
         while not websocket.closed:
             request_dict = await self.send_queue.get()
-            logger.info(f"SEND: {request_dict}")
+            logger.debug(f"SEND: {request_dict}")
             await websocket.send(json.dumps(request_dict))
 
-    async def start_receiver(self, websocket: WebSocketClientProtocol):
+    async def start_receiver(
+        self, websocket: "websockets.client.WebSocketClientProtocol"
+    ):
         async for message in websocket:
-            logger.info(f"RECV: {message}")
+            logger.debug(f"RECV: {message}")
             try:
                 response_dict = json.loads(message)
                 if "result" in response_dict:
@@ -61,8 +65,8 @@ class BotWebsocketRPCClient:
 
     async def start_consumer(self):
         logger.info("Starting rpc client consumer")
-        async for websocket in websockets.connect(self.ws_uri):
-            websocket: WebSocketClientProtocol
+        async for websocket in websockets.client.connect(self.ws_uri):
+            websocket: "websockets.client.WebSocketClientProtocol"
             logger.info(f"Websocket client bind on {websocket.local_address}")
             try:
                 await asyncio.gather(

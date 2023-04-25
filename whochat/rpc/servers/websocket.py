@@ -1,9 +1,8 @@
 import asyncio
 import logging
 
-import websockets
+import websockets.server
 from jsonrpcserver import async_dispatch
-from websockets.legacy.server import WebSocketServerProtocol
 
 from whochat.signals import Signal
 
@@ -15,7 +14,7 @@ async def dispatch_in_task(websocket, request):
     await websocket.send(res)
 
 
-async def handler(websocket: WebSocketServerProtocol):
+async def handler(websocket: "websockets.server.WebSocketServerProtocol"):
     logger.info(f"Accept connection from {websocket.remote_address}")
     while not websocket.closed:
         request = await websocket.recv()
@@ -35,6 +34,6 @@ async def run(host, port):
         WechatBotFactory.exit()
 
     Signal.register_sigint(shutdown)
-    async with websockets.serve(handler, host, port):
+    async with websockets.server.serve(handler, host, port):
         logger.info(f"运行微信机器人RPC websocket服务, 地址为<{host}:{port}>")
         await stop_event.wait()

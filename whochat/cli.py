@@ -25,7 +25,6 @@ def whochat(log_level: str):
     使用<子命令> --help查看使用说明
     """
     logger = logging.getLogger("whochat")
-    logging.getLevelName(log_level)
     logger.setLevel(log_level.upper())
 
 
