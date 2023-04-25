@@ -8,7 +8,8 @@ from functools import partial
 from typing import Awaitable, Callable, List
 
 import websockets
-from websockets.legacy.client import WebSocketClientProtocol
+import websockets.client
+import websockets.server
 from websockets.typing import Data
 
 from whochat import _comtypes as comtypes
@@ -49,7 +50,7 @@ class MessageEventStoreSink(RobotEventSinkABC):
             logger.warning("接收消息错误: ")
             logger.exception(e)
             return
-        logger.info(f"收到消息: {data}")
+        logger.debug(f"收到消息: {data}")
         self.deque_.append(data)
 
 
@@ -90,7 +91,7 @@ class WechatMessageWebsocketServer:
             logger.info(f"Connection from {websocket.remote_address} was closed")
 
     async def serve_websocket(self):
-        async with websockets.serve(
+        async with websockets.server.serve(
             self.handler, self.ws_host, self.ws_port, **self.extra_kwargs
         ) as ws_server:
             logger.info(f"开始运行微信Websocket服务，地址为：<{self.ws_host}:{self.ws_port}>")
@@ -156,7 +157,7 @@ class WechatMessageWebsocketServer:
         logger.info("广播已停止")
 
     def broadcast(self, data):
-        logger.info(f"广播消息：{data}")
+        logger.debug(f"广播消息：{data}")
         websockets.broadcast(self.clients, data)
 
     def shutdown(self):
@@ -192,8 +193,8 @@ class WechatMessageWebsocketClient:
 
     async def start_consumer(self, on_message: Callable[[Data], Awaitable]):
         logger.info("Starting message consumer...")
-        async for websocket in websockets.connect(self.ws_uri):
-            websocket: WebSocketClientProtocol
+        async for websocket in websockets.client.connect(self.ws_uri):
+            websocket: "websockets.client.WebSocketClientProtocol"
             logger.info(f"Websocket client bind on {websocket.local_address}")
             try:
                 async for message in websocket:
