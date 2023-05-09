@@ -174,6 +174,9 @@ Options:
 [CHANGELOG](https://github.com/amchii/whochat/blob/main/CHANGELOG.md)
 
 [Tags](https://github.com/amchii/whochat/tags)
+## v1.3.1
+* 修改日志级别，增加日志文件记录
+
 ## v1.3.0
 * 增加RPC Websocket客户端
 * 消息转发命令行增加`--welcome`参数决定是否在客户端连接是发送"hello"
