@@ -10,6 +10,15 @@
 ```
 
 [Tags](https://github.com/amchii/whochat/tags)
+## v1.3.1
+* 修改日志级别，增加日志文件记录
+
+## v1.3.0
+* 增加RPC Websocket客户端
+* 消息转发命令行增加`--welcome`参数决定是否在客户端连接是发送"hello"
+* `hook_`方法返回路径
+* 增加`prevent_revoke`阻止文件消息被撤回时被删除
+
 ## v1.2.1
 * 更新适配 [Robot DLL](https://github.com/amchii/ComWeChatRobot/commit/f6d75778d22b590a4775e49b72cb9c19037d2671)
 * 添加`_comtypes.py`方便在非Windows平台开发
