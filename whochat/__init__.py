@@ -1,4 +1,4 @@
 # flake8: noqa
 from .logger import logger
 
-__version__ = "1.3.1"
+__version__ = "1.3.2"
