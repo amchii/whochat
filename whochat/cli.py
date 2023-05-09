@@ -1,5 +1,6 @@
 import logging
 import os
+from logging.handlers import RotatingFileHandler
 
 import click
 
@@ -18,7 +19,8 @@ from whochat.utils import windows_only
     show_default=True,
     help="日志等级, `debug`, `info`, `warn`, `error`",
 )
-def whochat(log_level: str):
+@click.option("--log-file", "log_file", help="日志文件, 可以是相对路径")
+def whochat(log_level: str, log_file):
     """
     微信机器人
 
@@ -26,6 +28,23 @@ def whochat(log_level: str):
     """
     logger = logging.getLogger("whochat")
     logger.setLevel(log_level.upper())
+    if log_file:
+        abs_log_file = os.path.abspath(log_file)
+        dirname = os.path.dirname(abs_log_file)
+        if dirname and not os.path.exists(dirname):
+            os.makedirs(dirname)
+        assert os.path.isdir(dirname), f"{dirname}不存在或不是一个目录"
+        file_handler = RotatingFileHandler(
+            abs_log_file,
+            maxBytes=1024 * 1024,  # 1MB
+            backupCount=10,
+            encoding="utf-8",
+        )
+        verbose_formatter = logging.Formatter(
+            "[%(levelname)s] [%(name)s] %(asctime)s %(filename)s %(process)d %(message)s"
+        )
+        file_handler.setFormatter(verbose_formatter)
+        logger.addHandler(file_handler)
 
 
 @whochat.command()
