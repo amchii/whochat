@@ -28,7 +28,11 @@ class MessageEventStoreSink(RobotEventSinkABC):
     @staticmethod
     def _parse_extrainfo(extrainfo):
         extra = {"is_at_msg": False}
-        m = re.search(r"<atuserlist><!\[CDATA\[(.*?)\]\]></atuserlist>", extrainfo)
+        android_windows_at_pattern = r"<atuserlist><!\[CDATA\[(.*?)\]\]></atuserlist>"
+        m = re.search(android_windows_at_pattern, extrainfo)
+        if not m:
+            mac_at_pattern = r"<atuserlist>(.*?)</atuserlist>"
+            m = re.search(mac_at_pattern, extrainfo)
         if m:
             extra["is_at_msg"] = True
             extra["at_user_list"] = m.group(1).split(",")
