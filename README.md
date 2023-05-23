@@ -174,7 +174,11 @@ Options:
 [CHANGELOG](https://github.com/amchii/whochat/blob/main/CHANGELOG.md)
 
 [Tags](https://github.com/amchii/whochat/tags)
-## v1.3.1
+## v1.3.3
+* 增加获取微信最新版本号的方法
+* 修复Mac用户发送@消息无法正确解析的问题
+
+## v1.3.2
 * 修改日志级别，增加日志文件记录
 
 ## v1.3.0
