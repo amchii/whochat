@@ -114,20 +114,28 @@ class BotRpcHelper:
         def factory(func):
             @functools.wraps(func)
             async def bot_self_func(wx_pid, *args, **kwargs):
-                bot = WechatBotFactory.get(wx_pid)
-                loop = asyncio.get_running_loop()
-                result = await loop.run_in_executor(
-                    bot_executor,
-                    functools.partial(func, bot, *args, **kwargs),
-                )
-                return Success(result)
+                try:
+                    bot = WechatBotFactory.get(wx_pid)
+                    loop = asyncio.get_running_loop()
+                    result = await loop.run_in_executor(
+                        bot_executor,
+                        functools.partial(func, bot, *args, **kwargs),
+                    )
+                    return Success(result)
+                except Exception as e:
+                    logger.exception(e)
+                    raise
 
             @functools.wraps(func)
             async def normal_func(*args, **kwargs):
-                _func = functools.partial(func, *args, **kwargs)
-                loop = asyncio.get_running_loop()
-                result = await loop.run_in_executor(bot_executor, _func)
-                return Success(result)
+                try:
+                    _func = functools.partial(func, *args, **kwargs)
+                    loop = asyncio.get_running_loop()
+                    result = await loop.run_in_executor(bot_executor, _func)
+                    return Success(result)
+                except Exception as e:
+                    logger.exception(e)
+                    raise
 
             if func.__qualname__.split(".", maxsplit=1)[0] == "WechatBot":
                 return bot_self_func

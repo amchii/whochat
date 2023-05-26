@@ -81,6 +81,7 @@ class WechatMessageWebsocketServer:
         self._event_waiter = EventWaiter(2)
 
         self._stop_broadcast = False
+        self._stop_receive_msg = False
         self._stop_websocket = asyncio.Event()
         Signal.register_sigint(self.shutdown)
 
@@ -121,7 +122,7 @@ class WechatMessageWebsocketServer:
             comtypes.CoUninitialize()
 
     async def deque_to_queue(self):
-        while True:
+        while not self._stop_receive_msg:
             try:
                 e = self._deque.popleft()
                 await self.queue.put(e)
@@ -140,6 +141,7 @@ class WechatMessageWebsocketServer:
 
     def stop_receive_msg(self):
         self._event_waiter.stop()
+        self._stop_receive_msg = True
         for wx_pid in self.wx_pids:
             bot = WechatBotFactory.get(wx_pid)
             bot.stop_receive_message()
@@ -171,15 +173,19 @@ class WechatMessageWebsocketServer:
         self.stop_receive_msg()
 
     async def serve(self):
-        websocket_task = asyncio.create_task(self.serve_websocket())
-        receive_msg_task = asyncio.create_task(self.start_receive_msg())
-        broadcast_task = asyncio.create_task(self.broadcast_received_msg())
+        try:
+            websocket_task = asyncio.create_task(self.serve_websocket())
+            receive_msg_task = asyncio.create_task(self.start_receive_msg())
+            broadcast_task = asyncio.create_task(self.broadcast_received_msg())
 
-        await websocket_task
-        self.stop_broadcast()
-        self.stop_receive_msg()
-        await receive_msg_task
-        await broadcast_task
+            await websocket_task
+            self.stop_broadcast()
+            self.stop_receive_msg()
+            await receive_msg_task
+            await broadcast_task
+        except Exception as e:
+            logger.exception(e)
+            raise
 
 
 class WechatWebsocketServer(WechatMessageWebsocketServer):
