@@ -52,7 +52,7 @@ class WechatBot:
         wx_pid,
         robot_object_id: str,
         robot_event_id: str = None,
-        latest_version=None,
+        wechat_version=None,
     ):
         self.wx_pid = int(wx_pid)
         self._robot_object_id = robot_object_id
@@ -64,7 +64,7 @@ class WechatBot:
         self._base_directory = None
         self.image_hook_path = None
         self.voice_hook_path = None
-        self.latest_version = latest_version
+        self.wechat_version = wechat_version
 
     @property
     def robot(self):
@@ -89,9 +89,9 @@ class WechatBot:
         )
         if result == 0:
             self.started = True
-            if self.latest_version:
-                self.change_wechat_ver(self.latest_version)
-                logger.info(f"更改微信版本号为: {self.latest_version}")
+            if self.wechat_version:
+                self.change_wechat_ver(self.wechat_version)
+                logger.info(f"更改微信版本号为: {self.wechat_version}")
         return not result
 
     def stop_robot_service(self):
@@ -689,11 +689,14 @@ class WechatBotFactory(metaclass=WechatBotFactoryMetaclass):
     @classmethod
     def get(cls, wx_pid) -> "WechatBot":
         if wx_pid not in cls._instances:
+            wechat_version = os.environ.get(
+                "WHOCHAT_WECHAT_VERSION"
+            ) or cls.get_latest_wechat_version(fill=".99")
             bot = WechatBot(
                 wx_pid,
                 cls._robot_object_id,
                 cls._robot_event_id,
-                latest_version=cls.get_latest_wechat_version(),
+                wechat_version=wechat_version,
             )
             cls._instances[wx_pid] = bot
         return cls._instances[wx_pid]
@@ -756,7 +759,7 @@ class WechatBotFactory(metaclass=WechatBotFactoryMetaclass):
         return os.getcwd()
 
     @classmethod
-    def get_latest_wechat_version(cls):
+    def get_latest_wechat_version(cls, fill: str = None):
         logger.info("获取微信最新版本号...")
         with request.urlopen(
             request.Request(
@@ -773,5 +776,7 @@ class WechatBotFactory(metaclass=WechatBotFactoryMetaclass):
             logger.warning("获取微信最新版本号异常")
             return
         version = m.group(1)
+        if fill:
+            version = version + fill
         logger.info(f"微信最新版本号：{version}")
         return version
