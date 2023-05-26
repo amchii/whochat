@@ -8,7 +8,7 @@ import tempfile
 import threading
 import time
 from datetime import datetime
-from typing import Dict, List, Union
+from typing import Dict, List, Union, overload
 from urllib import request
 
 import psutil
@@ -47,7 +47,13 @@ def auto_start(func):
 
 
 class WechatBot:
-    def __init__(self, wx_pid, robot_object_id: str, robot_event_id: str = None):
+    def __init__(
+        self,
+        wx_pid,
+        robot_object_id: str,
+        robot_event_id: str = None,
+        latest_version=None,
+    ):
         self.wx_pid = int(wx_pid)
         self._robot_object_id = robot_object_id
         self._robot_event_id = robot_event_id
@@ -58,6 +64,7 @@ class WechatBot:
         self._base_directory = None
         self.image_hook_path = None
         self.voice_hook_path = None
+        self.latest_version = latest_version
 
     @property
     def robot(self):
@@ -82,6 +89,9 @@ class WechatBot:
         )
         if result == 0:
             self.started = True
+            if self.latest_version:
+                self.change_wechat_ver(self.latest_version)
+                logger.info(f"更改微信版本号为: {self.latest_version}")
         return not result
 
     def stop_robot_service(self):
@@ -106,6 +116,10 @@ class WechatBot:
         self._base_directory = base_directory
         return base_directory
 
+    @overload
+    def send_image(self, wx_id, img_path) -> int:
+        ...
+
     @auto_start
     def send_image(self, wx_id, img_path):
         path = pathlib.Path(img_path)
@@ -122,9 +136,17 @@ class WechatBot:
 
         return self.robot.CSendImage(self.wx_pid, wx_id, str(path))
 
+    @overload
+    def send_text(self, wx_id, text) -> int:
+        ...
+
     @auto_start
     def send_text(self, wx_id, text):
         return self.robot.CSendText(self.wx_pid, wx_id, text)
+
+    @overload
+    def send_file(self, wx_id, filepath) -> int:
+        ...
 
     @auto_start
     def send_file(self, wx_id, filepath):
@@ -134,15 +156,35 @@ class WechatBot:
 
         return self.robot.CSendFile(self.wx_pid, wx_id, str(path))
 
+    @overload
+    def send_article(
+        self, wxid: str, title: str, abstract: str, url: str, imgpath: str
+    ):
+        ...
+
     @auto_start
     def send_article(
         self, wxid: str, title: str, abstract: str, url: str, imgpath: str
     ):
         return self.robot.CSendArticle(self.wx_pid, wxid, title, abstract, url, imgpath)
 
+    @overload
+    def send_card(self, wxid: str, shared_wxid: str, nickname: str) -> int:
+        ...
+
     @auto_start
     def send_card(self, wxid: str, shared_wxid: str, nickname: str):
         return self.robot.CSendCard(self.wx_pid, wxid, shared_wxid, nickname)
+
+    @overload
+    def send_at_text(
+        self,
+        chatroom_id: str,
+        at_wxids: Union[str, List[str]],
+        text: str,
+        auto_nickname: bool = True,
+    ) -> int:
+        ...
 
     @auto_start
     def send_at_text(
@@ -156,6 +198,10 @@ class WechatBot:
             self.wx_pid, chatroom_id, at_wxids, text, auto_nickname
         )
 
+    @overload
+    def get_friend_list(self) -> List[Dict]:
+        ...
+
     @auto_start
     def get_friend_list(self):
         return [
@@ -167,6 +213,10 @@ class WechatBot:
                 or []
             )
         ]
+
+    @overload
+    def get_wx_user_info(self, wxid: str):
+        ...
 
     @auto_start
     def get_wx_user_info(self, wxid: str):
@@ -180,6 +230,10 @@ class WechatBot:
     def self_path(self):
         return os.path.join(self.base_directory, str(self.wx_pid))
 
+    @overload
+    def get_self_info(self, refresh=False) -> Dict:
+        ...
+
     @auto_start
     def get_self_info(self, refresh=False):
         if refresh or not self.user_info:
@@ -190,15 +244,27 @@ class WechatBot:
             )
         return self.user_info
 
+    @overload
+    def check_friend_status(self, wxid: str) -> int:
+        ...
+
     @auto_start
     def check_friend_status(self, wxid: str):
         return self.robot.CCheckFriendStatus(self.wx_pid, wxid)
+
+    @overload
+    def get_com_work_path(self) -> int:
+        ...
 
     @auto_start
     def get_com_work_path(self):
         return self.robot.CGetComWorkPath(
             self.wx_pid,
         )
+
+    @overload
+    def start_receive_message(self, port: int) -> int:
+        ...
 
     @auto_start
     def start_receive_message(self, port: int):
@@ -208,17 +274,29 @@ class WechatBot:
         """
         return self.robot.CStartReceiveMessage(self.wx_pid, port)
 
+    @overload
+    def stop_receive_message(self) -> int:
+        ...
+
     @auto_start
     def stop_receive_message(self):
         return self.robot.CStopReceiveMessage(
             self.wx_pid,
         )
 
+    @overload
+    def get_chat_room_member_ids(self, chatroom_id: str) -> List:
+        ...
+
     @auto_start
     def get_chat_room_member_ids(self, chatroom_id: str):
         wx_ids_str: str = self.robot.CGetChatRoomMembers(self.wx_pid, chatroom_id)[1][1]
         wx_ids = wx_ids_str.split("^G")
         return wx_ids
+
+    @overload
+    def get_chat_room_member_nickname(self, chatroom_id: str, wxid: str) -> str:
+        ...
 
     @auto_start
     def get_chat_room_member_nickname(self, chatroom_id: str, wxid: str):
@@ -245,9 +323,17 @@ class WechatBot:
             )
         return results
 
+    @overload
+    def add_friend_by_wxid(self, wxid: str, message: str) -> int:
+        ...
+
     @auto_start
     def add_friend_by_wxid(self, wxid: str, message: str):
         return self.robot.CAddFriendByWxid(self.wx_pid, wxid, message)
+
+    @overload
+    def search_contact_by_net(self, keyword: str) -> List[Dict]:
+        ...
 
     @auto_start
     def search_contact_by_net(self, keyword: str):
@@ -255,21 +341,41 @@ class WechatBot:
             dict(item) for item in self.robot.CSearchContactByNet(self.wx_pid, keyword)
         ]
 
+    @overload
+    def add_brand_contact(self, public_id: str) -> int:
+        ...
+
     @auto_start
     def add_brand_contact(self, public_id: str):
         return self.robot.CAddBrandContact(self.wx_pid, public_id)
 
+    @overload
+    def change_wechat_ver(self, version: str) -> int:
+        ...
+
     @auto_start
-    def change_we_chat_ver(self, version: str):
+    def change_wechat_ver(self, version: str):
         return self.robot.CChangeWeChatVer(self.wx_pid, version)
+
+    @overload
+    def send_app_msg(self, wxid: str, app_id: str) -> int:
+        ...
 
     @auto_start
     def send_app_msg(self, wxid: str, app_id: str):
         return self.robot.CSendAppMsg(self.wx_pid, wxid, app_id)
 
+    @overload
+    def delete_user(self, wxid: str) -> int:
+        ...
+
     @auto_start
     def delete_user(self, wxid: str):
         return self.robot.CDeleteUser(self.wx_pid, wxid)
+
+    @overload
+    def is_wx_login(self) -> int:
+        ...
 
     @auto_start
     def is_wx_login(self) -> int:
@@ -277,9 +383,17 @@ class WechatBot:
             self.wx_pid,
         )
 
+    @overload
+    def get_db_handles(self) -> List[Dict]:
+        ...
+
     @auto_start
     def get_db_handles(self):
         return [dict(item) for item in self.robot.CGetDbHandles(self.wx_pid)]
+
+    @overload
+    def register_event(self, event_sink: RobotEventSinkABC) -> int:
+        ...
 
     @auto_start
     def register_event(self, event_sink: RobotEventSinkABC):
@@ -290,9 +404,17 @@ class WechatBot:
             self.wx_pid, self.event_connection.cookie
         )
 
+    @overload
+    def get_wechat_ver(self) -> str:
+        ...
+
     @auto_start
-    def get_we_chat_ver(self) -> str:
+    def get_wechat_ver(self) -> str:
         return self.robot.CGetWeChatVer()
+
+    @overload
+    def hook_voice_msg(self, savepath: str) -> Union[int, str]:
+        ...
 
     @auto_start
     def hook_voice_msg(self, savepath: str) -> Union[int, str]:
@@ -305,9 +427,17 @@ class WechatBot:
             return self.voice_hook_path
         return result
 
+    @overload
+    def unhook_voice_msg(self) -> int:
+        ...
+
     @auto_start
     def unhook_voice_msg(self):
         return self.robot.CUnHookVoiceMsg(self.wx_pid)
+
+    @overload
+    def hook_image_msg(self, savepath: str) -> Union[int, str]:
+        ...
 
     @auto_start
     def hook_image_msg(self, savepath: str) -> Union[int, str]:
@@ -320,13 +450,25 @@ class WechatBot:
             return self.image_hook_path
         return result
 
+    @overload
+    def unhook_image_msg(self) -> int:
+        ...
+
     @auto_start
     def unhook_image_msg(self):
         return self.robot.CUnHookImageMsg(self.wx_pid)
 
+    @overload
+    def open_browser(self, url: str) -> int:
+        ...
+
     @auto_start
     def open_browser(self, url: str):
         return self.robot.COpenBrowser(self.wx_pid, url)
+
+    @overload
+    def get_history_public_msg(self, public_id: str, offset: str = "") -> List:
+        ...
 
     @auto_start
     def get_history_public_msg(self, public_id: str, offset: str = ""):
@@ -344,6 +486,10 @@ class WechatBot:
             return []
         return msgs
 
+    @overload
+    def forward_message(self, wxid: str, msgid: int) -> int:
+        ...
+
     @auto_start
     def forward_message(self, wxid: str, msgid: int):
         """
@@ -354,6 +500,12 @@ class WechatBot:
             msgid (int): 消息id
         """
         return self.robot.CForwardMessage(self.wx_pid, wxid, msgid)
+
+    @overload
+    def get_qrcode_image(
+        self,
+    ) -> bytes:
+        ...
 
     @auto_start
     def get_qrcode_image(
@@ -374,6 +526,10 @@ class WechatBot:
         """
         return self.robot.CGetQrcodeImage(self.wx_pid)
 
+    @overload
+    def get_a8_key(self, url: str) -> str:
+        ...
+
     @auto_start
     def get_a8_key(self, url: str):
         """
@@ -390,6 +546,10 @@ class WechatBot:
             return ""
         return result
 
+    @overload
+    def send_xml_msg(self, wxid: str, xml: str, img_path: str) -> int:
+        ...
+
     @auto_start
     def send_xml_msg(self, wxid: str, xml: str, img_path: str) -> int:
         """
@@ -400,6 +560,10 @@ class WechatBot:
         """
         return self.robot.CSendXmlMsg(self.wx_pid, wxid, xml, img_path)
 
+    @overload
+    def logout(self) -> int:
+        ...
+
     @auto_start
     def logout(self) -> int:
         """
@@ -409,6 +573,10 @@ class WechatBot:
             int: 0表示成功
         """
         return self.robot.CLogout(self.wx_pid)
+
+    @overload
+    def get_transfer(self, wxid: str, transactionid: str, transferid: int) -> int:
+        ...
 
     @auto_start
     def get_transfer(self, wxid: str, transactionid: str, transferid: int) -> int:
@@ -429,9 +597,17 @@ class WechatBot:
         """
         return self.robot.CGetTransfer(self.wx_pid, wxid, transactionid, transferid)
 
+    @overload
+    def send_emotion(self, wxid: str, img_path: str) -> int:
+        ...
+
     @auto_start
     def send_emotion(self, wxid: str, img_path: str) -> int:
         return self.robot.CSendEmotion(self.wx_pid, wxid, img_path)
+
+    @overload
+    def get_msg_cdn(self, msgid: int) -> str:
+        ...
 
     @auto_start
     def get_msg_cdn(self, msgid: int) -> str:
@@ -513,9 +689,13 @@ class WechatBotFactory(metaclass=WechatBotFactoryMetaclass):
     @classmethod
     def get(cls, wx_pid) -> "WechatBot":
         if wx_pid not in cls._instances:
-            cls._instances[wx_pid] = WechatBot(
-                wx_pid, cls._robot_object_id, cls._robot_event_id
+            bot = WechatBot(
+                wx_pid,
+                cls._robot_object_id,
+                cls._robot_event_id,
+                latest_version=cls.get_latest_wechat_version(),
             )
+            cls._instances[wx_pid] = bot
         return cls._instances[wx_pid]
 
     @classmethod
