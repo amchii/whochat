@@ -179,8 +179,6 @@ class WechatMessageWebsocketServer:
             broadcast_task = asyncio.create_task(self.broadcast_received_msg())
 
             await websocket_task
-            self.stop_broadcast()
-            self.stop_receive_msg()
             await receive_msg_task
             await broadcast_task
         except Exception as e:
