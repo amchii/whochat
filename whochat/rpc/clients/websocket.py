@@ -1,7 +1,6 @@
 import asyncio
 import json
 import logging
-import time
 from collections import defaultdict
 from functools import partial
 from typing import Any, Dict
@@ -14,9 +13,7 @@ from whochat.rpc.handlers import make_rpc_methods
 
 logger = logging.getLogger("whochat")
 
-
-class unset:  # noqa
-    pass
+unset = object()
 
 
 class Timeout(Exception):
@@ -47,7 +44,11 @@ class BotWebsocketRPCClient:
         while not websocket.closed:
             request_dict = await self.send_queue.get()
             logger.debug(f"SEND: {request_dict}")
-            await websocket.send(json.dumps(request_dict))
+            try:
+                await websocket.send(json.dumps(request_dict))
+            except websockets.ConnectionClosed:
+                await self.send_queue.put(request_dict)
+                raise
 
     async def start_receiver(
         self, websocket: "websockets.client.WebSocketClientProtocol"
@@ -59,6 +60,7 @@ class BotWebsocketRPCClient:
                 if "result" in response_dict:
                     self._results[response_dict["id"]] = response_dict["result"]
                 elif "error" in response_dict:
+                    self._results[response_dict["id"]] = response_dict["error"]
                     logger.error(response_dict["error"])
             except json.JSONDecodeError:
                 continue
@@ -68,44 +70,53 @@ class BotWebsocketRPCClient:
         async for websocket in websockets.client.connect(self.ws_uri):
             websocket: "websockets.client.WebSocketClientProtocol"
             logger.info(f"Websocket client bind on {websocket.local_address}")
+            gathered = asyncio.gather(
+                self.start_receiver(websocket),
+                self.start_sender(websocket),
+            )
             try:
-                await asyncio.gather(
-                    self.start_receiver(websocket),
-                    self.start_sender(websocket),
-                )
-            except websockets.ConnectionClosed:
+                await gathered
+            except websockets.ConnectionClosedOK:
                 logger.warning(
                     f"Websocket{websocket.local_address} closed",
                 )
+            except websockets.ConnectionClosedError:
+                logger.warning(
+                    f"Websocket{websocket.local_address} closed unexpectedly",
+                )
+            finally:
+                gathered.cancel()
 
     def consume_in_background(self):
         asyncio.create_task(self.start_consumer())
         asyncio.create_task(self.start_result_cleaner())
 
+    async def _send_and_recv(self, request):
+        await self.send_queue.put(request)
+        request_id = request["id"]
+        while True:
+            if self._results[request_id] is unset:
+                await asyncio.sleep(0.1)
+            else:
+                return self._results[request_id]
+
     async def rpc_call(self, name: str, params, timeout):
         request = req(name, params)
         request_id = request["id"]
         self._current_request_id = request_id
-        await self.send_queue.put(request)
         if timeout < 0:
+            asyncio.create_task(self.send_queue.put(request))
             return request_id
-        elif timeout == 0:
-            while True:
-                if self._results[request_id] is unset:
-                    await asyncio.sleep(0.1)
-                else:
-                    return self._results[request_id]
+        if timeout == 0:
+            return await self._send_and_recv(request)
         else:
-            start = time.perf_counter()
-            while time.perf_counter() < start + timeout:
-                if self._results[request_id] is unset:
-                    await asyncio.sleep(0.1)
-                else:
-                    return self._results[request_id]
-            raise Timeout(f"Timeout: rpc call timeout: {name}, params {params}")
+            try:
+                return await asyncio.wait_for(self._send_and_recv(request), timeout)
+            except asyncio.TimeoutError:
+                raise Timeout(f"Timeout: rpc call timeout: {name}, params {params}")
 
     def __getattr__(self, item):
-        def remote_func(*params, timeout=0):
+        def remote_func(*params, timeout=5):
             """
             :param params: 仅支持位置参数
             :param timeout: 超时时间。0: 阻塞等待返回结果, <0: 直接返回不等结果,  >0: 等待超时时间
