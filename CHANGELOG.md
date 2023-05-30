@@ -10,6 +10,10 @@
 ```
 
 [Tags](https://github.com/amchii/whochat/tags)
+## v1.3.5
+* 解析最新微信版本`extra_info`
+* Log raw message at debug level
+
 ## v1.3.4
 * 自动设置微信版本号避免更新
 * 增加环境变量`WHOCHAT_WECHAT_VERSION`自定义微信版本号
