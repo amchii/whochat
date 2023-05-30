@@ -81,6 +81,7 @@ class MessageEventStoreSink(RobotEventSinkABC):
         return extra
 
     def OnGetMessageEvent(self, msg):
+        logger.debug(f"Raw message: {msg}")
         if isinstance(msg, (list, tuple)):
             msg = msg[0]
         try:
