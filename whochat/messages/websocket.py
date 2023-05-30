@@ -27,6 +27,43 @@ class MessageEventStoreSink(RobotEventSinkABC):
 
     @staticmethod
     def _parse_extrainfo(extrainfo):
+        """
+        Windows 3.9.2.26:
+        <msgsource>
+            <atuserlist><![CDATA[,wxid_enuyja8axoz92,wxid_enuyjaxoz922,wxid_ctg8dfsen122]]></atuserlist>
+            <silence>0</silence>
+            <membercount>12</membercount>
+            <signature>v1_6XIdCSDF</signature>
+            <tmp_node>
+                <publisher-id>&lt;![CDATA[]]&gt;</publisher-id>
+            </tmp_node>
+        </msgsource>
+
+        Mac 3.7.0:
+        <msgsource>
+            <atuserlist>wxid_enuyja8axoz92</atuserlist>
+            <alnode>
+                <fr>1</fr>
+            </alnode>
+            <silence>0</silence>
+            <membercount>12</membercount>
+            <signature>v1_JVxT4Vi9</signature>
+            <tmp_node>
+                <publisher-id>&lt;![CDATA[]]&gt;</publisher-id>
+            </tmp_node>
+        </msgsource>
+
+        Android 8.0.35:
+        <msgsource>
+            <atuserlist><![CDATA[wxid_enuyja8axoz92]]></atuserlist>
+            <silence>0</silence>
+            <membercount>12</membercount>
+            <signature>v1_VQrQyKdq</signature>
+            <tmp_node>
+                <publisher-id>&lt;![CDATA[]]&gt;</publisher-id>
+            </tmp_node>
+        </msgsource>
+        """
         extra = {"is_at_msg": False}
         android_windows_at_pattern = r"<atuserlist><!\[CDATA\[(.*?)\]\]></atuserlist>"
         m = re.search(android_windows_at_pattern, extrainfo)
@@ -35,7 +72,9 @@ class MessageEventStoreSink(RobotEventSinkABC):
             m = re.search(mac_at_pattern, extrainfo)
         if m:
             extra["is_at_msg"] = True
-            extra["at_user_list"] = m.group(1).split(",")
+            extra["at_user_list"] = [
+                wxid.strip() for wxid in m.group(1).split(",") if wxid.strip()
+            ]
         m = re.search(r"<membercount>(\d+)</membercount>", extrainfo)
         if m:
             extra["member_count"] = int(m.group(1))
