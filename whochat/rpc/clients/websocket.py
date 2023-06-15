@@ -46,7 +46,7 @@ class BotWebsocketRPCClient:
             logger.debug(f"SEND: {request_dict}")
             try:
                 await websocket.send(json.dumps(request_dict))
-            except websockets.ConnectionClosed:
+            except websockets.ConnectionClosedError:
                 await self.send_queue.put(request_dict)
                 raise
 
