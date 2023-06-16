@@ -25,18 +25,20 @@
 ### 一个接入ChatGPT的机器人示例，支持私聊和群聊：
 
 1. 私聊
+
    ![Private Chat](https://github.com/amchii/whochat/blob/main/docs/imgs/private_chat.png)
 
 2. 群
 
-![Chatroom Chat](https://github.com/amchii/whochat/blob/main/docs/imgs/chatroom_chat.png)
+   ![Chatroom Chat](https://github.com/amchii/whochat/blob/main/docs/imgs/chatroom_chat.png)
 
 3. 防撤回（转发撤回消息至文件传输助手）
 
-![forward revoked msg](https://github.com/amchii/whochat/main/blob/docs/imgs/forward_revoked_msg.png)
+   ![forward revoked msg](https://github.com/amchii/whochat/blob/main/docs/imgs/forward_revoked_msg.png)
 
 4. 其他
-复读机，定时任务...
+
+   复读机，定时任务...
 
 _示例源码待放出_
 
