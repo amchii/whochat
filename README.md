@@ -26,21 +26,23 @@
 
 1. 私聊
 
-   ![Private Chat](https://github.com/amchii/whochat/blob/main/docs/imgs/private_chat.png)
+   ![Private Chat](https://github.com/amchii/whochat/raw/main/docs/imgs/private_chat.png)
 
 2. 群
 
-   ![Chatroom Chat](https://github.com/amchii/whochat/blob/main/docs/imgs/chatroom_chat.png)
+   ![Chatroom Chat](https://github.com/amchii/whochat/raw/main/docs/imgs/chatroom_chat.png)
 
 3. 防撤回（转发撤回消息至文件传输助手）
 
-   ![forward revoked msg](https://github.com/amchii/whochat/blob/main/docs/imgs/forward_revoked_msg.png)
+   ![forward revoked msg](https://github.com/amchii/whochat/raw/main/docs/imgs/forward_revoked_msg.png)
 
 4. 其他
 
    复读机，定时任务...
 
-_示例源码待放出_
+示例源码：
+
+https://github.com/amchii/wechat-bot
 
 ## 安装：
 
